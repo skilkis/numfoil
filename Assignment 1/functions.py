@@ -1,6 +1,24 @@
 import numpy as np
 from math import pi, sin, cos, atan, sqrt
 
+
+def v_comp(v_inf, alpha):
+    """return velocity component vector
+
+    Args:
+        v_inf (float): Freestrean velocity
+        alpha (float): Angle of attack in degrees
+
+    Returns:
+        [array]: velocity vector
+    """
+    AoA = alpha * pi/180
+    u_inf = v_inf * cos(AoA)
+    w_inf = v_inf * sin(AoA)
+    Q_inf = np.array([[u_inf, w_inf]])
+    return Q_inf
+
+
 def airfoil(Naca=[2, 4, 1, 0], n_panels=10):
     """
     From a given 4-digit NACA code, finds the function of the camber line,
@@ -36,9 +54,13 @@ def airfoil(Naca=[2, 4, 1, 0], n_panels=10):
 
     # using NACA 4 digit airfoil calculation to
     # obtain airfoil coordinate points = panel edges
+    # ! -------------------------------------------
     for beta in np.linspace(0, pi, N):
         # cosine spacing
         x = 0.5 - 0.5 * cos(beta)
+    # ! -------------------------------------------
+    # for x in np.linspace(0, 1, N):
+    # ! -------------------------------------------
         # thickness distribution
         y_t = t_c/0.2 * (a0 * x**0.5 +
                          a1 * x +
@@ -75,28 +97,30 @@ def airfoil(Naca=[2, 4, 1, 0], n_panels=10):
     return coor_u, coor_l, coor_c
 
 
-def panels(coor_c):
+def panels(coor):
     """
     takes a list of points on the camber line. These points are considered
     panel edges. Collocation points are added at 0.75 panel length and vortex 
     points are added at 0.25 panel lenght.
 
     Args:
-        coor_c (list): List of panel edges (on camber line).
+        coor (list): List of panel edges (on camber line).
                        should be list of camberline points.
 
     Returns:
         coor_col (list): list of coordinates of collocation points.
         coor_vor (list): list of coordinates of vortex element points.
+        thetas (list): list of panel angles.
+        panel_length (list): list of panel lengths.
     """
     coor_col = []
     coor_vor = []
     thetas = []
     panel_length = []
 
-    for i in range(len(coor_c)-1):
-        p1 = coor_c[i]
-        p2 = coor_c[i+1]
+    for i in range(len(coor)-1):
+        p1 = coor[i]
+        p2 = coor[i+1]
 
         # place collocation point at 0.75 panel length
         x_col = p1[0] + 0.75 * (p2[0] - p1[0])  # x_i
@@ -136,9 +160,9 @@ def v_ind(x_col, y_col, x_vor, y_vor, Gamma=1):
         y (Float): vertical component of induced velocity due to vortex
     """
 
-    r = sqrt( (x_col - x_vor)**2 + (y_col - y_vor)**2 )
-    u = Gamma/(2*pi) * (y_col - y_vor)/r**2         # horizontal component
-    w = -Gamma/(2*pi) * (x_col - x_vor)/r**2        # vertical component
+    r = sqrt((x_col - x_vor)**2 + (y_col - y_vor)**2)
+    u = Gamma/(2 * pi * r**2) * (y_col - y_vor)         # horizontal component
+    w = -Gamma/(2 * pi * r**2) * (x_col - x_vor)        # vertical component
     return np.array([u, w])
 
 
