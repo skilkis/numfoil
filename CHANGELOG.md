@@ -22,6 +22,8 @@ changes and backwards compatibility is not guaranteed.
 - Ability to install `gammapy` installable through [pip]
 - `tests/` folder with a sample test for verifying [pytest]
 - Apache 2.0 license header and license file
+- Assignment I tasks templates to an `assignment` folder
+- Sample `test_airfoil` unit-test to trigger `coverage.py` to run
 - [README.md] to instruct users how to install `gammapy`
 - [CONTRIBUTING.md] file to welcome new developers to the project
 - [CHANGELOG.md] to log the [Semantic Versioning] of the project
@@ -29,6 +31,10 @@ changes and backwards compatibility is not guaranteed.
 ### Changed
 
 - Location of Python files into the new `src/gammapy/` directory
+
+### Removed
+
+- Sample test `test_numpy.py`
 
 <!-- Un-wrapped Text Below for References, Links, Images, etc. -->
 [Keep a Changelog]: https://keepachangelog.com/en/1.0.0/
