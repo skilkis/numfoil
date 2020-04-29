@@ -1,0 +1,22 @@
+' Sample PlantUML activity diagram from SoSID Toolkit
+@startuml preprocessing
+skinparam shadowing false
+skinparam monochrome true
+|Preprocessing|
+start
+while (Iterated Through all Neighbors?) is (No)
+        :Retrieve Neighboring Cell State;
+    if (Fire State is Full Burning?) then (Yes)
+        :Set Current Cell as Ignitable;
+        :Increment i and j Vector Components;
+    elseif (Fire State >= Full Burning or is Nonflammable) then (Yes)
+        :Increment Extinguishable Count;
+    else (No)
+        :Pass;
+    endif
+endwhile (Yes)
+:Compute Fire Propagation Aspect;
+:Determine if Cell is Extinguishable;
+:Return Prop. Aspect, Ignitability, and Extinguishability;
+stop
+@enduml
