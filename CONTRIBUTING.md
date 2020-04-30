@@ -4,10 +4,10 @@
 
 ### 1. Cloning the Repository
 
-To grab the latest version of `gammepy` run the following command:
+To grab the latest version of `gammapy` run the following command:
 
 ``` cmd
-git clone -b develop https://github.com/skilkis/pybot.git
+git clone -b develop https://github.com/kswannet/GammaPy.git
 ```
 
 ### 2. Creating and Activating a Virtual Environment
