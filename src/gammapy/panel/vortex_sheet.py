@@ -74,7 +74,7 @@ _, dP_l, Cp_l = solve_cp(Gamma_l, panel_length_l)
 
 
 @deprecated(version="0.1.0", reason="Use `zip` from Python STD Lib instead")
-def pt(set: List[list, list], i: int) -> list:
+def pt(set: List[list], i: int) -> list:
     """Get all x or y-values from a coordinate set for easier plotting.
 
     i = 0 for x values, i = 1 for y values.
