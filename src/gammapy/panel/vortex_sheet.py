@@ -24,84 +24,96 @@ from gammapy.functions import airfoil, normals, panels, v_comp, v_ind
 
 # pg280 573 300
 
-# * Constants * #
-alpha = 1  # angle of attack
-v_inf = 1  # freestream velocity
-n_panels = 100  # Number of panels per surface
-NACA = [0, 0, 0, 6]  # NACA XXXX digits of 4-digit airfoil
+class PanelMethod:
+
+    def __init__(self, Naca=[0,0,0,0], n_panels=5, alpha=1, v_inf=1):
+        # * Constants * #
+        self.alpha = alpha          # angle of attack
+        self.v_inf = v_inf          # freestream velocity
+        self.n_panels = n_panels    # Number of panels per surface
+        self.NACA = Naca            # NACA XXXX digits of 4-digit airfoil
+
+        self.Q_inf = v_comp(v_inf, alpha)
+        self.camberLine = CamberLine(self.NACA, self.n_panels)
+        
 
 
-Q_inf = v_comp(v_inf, alpha)
-coor_u, coor_l, coor_c = airfoil(NACA, n_panels)
+    # def solve_vorticity(self, surface, Q_inf):
 
 
-def solve_vorticity(surface):
-    coor_col, coor_vor, panel_angle, panel_length = panels(surface)
-    normal, tangent = normals(panel_angle)
+    #     A = np.zeros((n_panels, n_panels))
+    #     RHS = np.zeros((n_panels, 1))
 
-    A = np.zeros((n_panels, n_panels))
-    RHS = np.zeros((n_panels, 1))
-
-    for i, col in enumerate(coor_col):
-        for j, vor in enumerate(coor_vor):
-            q_ij = v_ind(col[0], col[1], vor[0], vor[1])
-            a_ij = np.dot(q_ij, normal[i])
-            A[i][j] = a_ij
-        RHS[i] = -np.dot(Q_inf, np.transpose(normal[i]))
-    Gamma = np.linalg.solve(A, RHS)
-    return Gamma, panel_length, coor_col
+    #     for i, col in enumerate(coor_col):
+    #         for j, vor in enumerate(coor_vor):
+    #             q_ij = v_ind(col[0], col[1], vor[0], vor[1])
+    #             a_ij = np.dot(q_ij, normal[i])
+    #             A[i][j] = a_ij
+    #         RHS[i] = -np.dot(Q_inf, np.transpose(normal[i]))
+    #     print(A)
+    #     print(RHS)
+    #     Gamma = np.linalg.solve(A, RHS)
+    #     return Gamma, panel_length, coor_col
 
 
-def solve_cp(Gamma, panel_length):
-    dCp = dL = dP = np.zeros((n_panels, 1))
+    def solve_cp(self):
+        dCp = dL = dP = np.zeros((self.n_panels, 1))
 
-    for i in range(len(Gamma)):
-        # dL[i] = rho * v_inf * gamma
-        # dP[i] = rho * v_inf * Gamma[i] / panel_length[i]
-        dCp[i] = -2 * Gamma[i] / panel_length[i] / v_inf
+        for i in range(len(Gamma)):
+            # dL[i] = rho * v_inf * gamma
+            # dP[i] = rho * v_inf * Gamma[i] / panel_length[i]
+            dCp[i] = -2 * self.Gamma[i] / self.panel_length[i] / self.v_inf
 
-    return dL, dP, dCp
-
-
-Gamma_u, panel_length_u, col_u = solve_vorticity(coor_u)
-Gamma_l, panel_length_l, col_l = solve_vorticity(coor_l)
-
-_, dP_u, Cp_u = solve_cp(Gamma_u, panel_length_u)
-_, dP_l, Cp_l = solve_cp(Gamma_l, panel_length_l)
+        return dCp
 
 
-# * plotting * #
+    # self.Gamma, self.panel_length, self.col = self.solve_vorticity(self.coor_c, self.Q_inf)
+    # _, _, self.dCp = solve_cp(self.Gamma, self.panel_length)
+
+    def plt(self):
+        upper_surface, lower_surface, _ = airfoil(self.NACA, self.n_panels)
+        # plt.figure(1)
+        plt.plot(
+                *zip(*self.camberLine.coor), "k", 
+                *zip(*upper_surface), "b", 
+                *zip(*lower_surface), "b",
+                )
+        plt.axis("equal")
+        plt.show()
 
 
-@deprecated(version="0.1.0", reason="Use `zip` from Python STD Lib instead")
-def pt(set: List[list], i: int) -> list:
-    """Get all x or y-values from a coordinate set for easier plotting.
+class CamberLine:
 
-    i = 0 for x values, i = 1 for y values.
+    def __init__(self, NACA, n_panels):
+        _, _, self.coor = airfoil(NACA, n_panels)
+        self.collocation_points, self.vortex_points, self.panel_angles, self.panel_length = panels(self.coor)
+        self.normals, self.tangents = normals(self.panel_angles)
 
-    Args:
-        set (list): list of coordinates
-        i (integer): Set i=0 for a list
-        of x values, set i=1 for a list of all y vlaues
+    def vorticity(self):
+        
 
-    Returns:
-        List of all x- or all y-values from a list of coordinates
-    """
-    p = []
-    for point in set:
-        p.append(point[i])
-    return p
+    def plt(self):
+        # plt.figure(2)
+        plt.plot(
+                *zip(*self.coor), "k",
+                *zip(*self.collocation_points), 'o',
+                *zip(*self.vortex_points), 'x'
+                )
+        plt.show()
 
 
-plt.figure(1)
-plt.plot(
-    *zip(*coor_c), "k", *zip(*coor_u), "b", *zip(*coor_l), "b",
-)
-plt.axis("equal")
-plt.show()
+class Vorticity:
+    def __init__(self, surface, Q_inf):
 
-plt.figure(2)
-x_u = [i[0] for i in col_u]
-x_l = [i[0] for i in col_l]
-plt.plot(x_u, -Cp_u, "b", x_l, Cp_l, "g")
-plt.show()
+        self.A = np.zeros((n_panels, n_panels))
+        self.RHS = np.zeros((n_panels, 1))
+
+        for i, col in enumerate(coor_col):
+            for j, vor in enumerate(coor_vor):
+                q_ij = v_ind(col[0], col[1], vor[0], vor[1])
+                a_ij = np.dot(q_ij, normal[i])
+                A[i][j] = a_ij
+            RHS[i] = -np.dot(Q_inf, np.transpose(normal[i]))
+
+        Gamma = np.linalg.solve(A, RHS)
+        return Gamma, panel_length, coor_col

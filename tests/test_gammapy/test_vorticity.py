@@ -13,7 +13,7 @@
 # permissions and limitations under the License.
 
 from gammapy.functions import airfoil, v_comp
-from gammapy.panel.vortex_sheet import solve_vorticity as solve_vorticity
+from gammapy.panel.vortex_sheet import solve_vorticity
 import numpy as np
 from math import sin, pi
 
