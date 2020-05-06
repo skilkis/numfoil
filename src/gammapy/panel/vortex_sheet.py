@@ -24,76 +24,49 @@ from gammapy.functions import airfoil, normals, panels, v_comp, v_ind
 
 # pg280 573 300
 
-class PanelMethod:
+class PanelledAirfoil:
 
     def __init__(self, Naca=[0,0,0,0], n_panels=5, alpha=1, v_inf=1):
-        # * Constants * #
         self.alpha = alpha          # angle of attack
         self.v_inf = v_inf          # freestream velocity
         self.n_panels = n_panels    # Number of panels per surface
         self.NACA = Naca            # NACA XXXX digits of 4-digit airfoil
 
         self.Q_inf = v_comp(v_inf, alpha)
-        self.camberLine = CamberLine(self.NACA, self.n_panels)
+        self.camberline = CamberLine(self.NACA, self.n_panels)
+        setattr(self.camberline, 'vorticity', Vorticity(self.camberline, self.Q_inf))
         
-
-
-    # def solve_vorticity(self, surface, Q_inf):
-
-
-    #     A = np.zeros((n_panels, n_panels))
-    #     RHS = np.zeros((n_panels, 1))
-
-    #     for i, col in enumerate(coor_col):
-    #         for j, vor in enumerate(coor_vor):
-    #             q_ij = v_ind(col[0], col[1], vor[0], vor[1])
-    #             a_ij = np.dot(q_ij, normal[i])
-    #             A[i][j] = a_ij
-    #         RHS[i] = -np.dot(Q_inf, np.transpose(normal[i]))
-    #     print(A)
-    #     print(RHS)
-    #     Gamma = np.linalg.solve(A, RHS)
-    #     return Gamma, panel_length, coor_col
-
-
-    def solve_cp(self):
-        dCp = dL = dP = np.zeros((self.n_panels, 1))
-
-        for i in range(len(Gamma)):
-            # dL[i] = rho * v_inf * gamma
-            # dP[i] = rho * v_inf * Gamma[i] / panel_length[i]
-            dCp[i] = -2 * self.Gamma[i] / self.panel_length[i] / self.v_inf
-
-        return dCp
-
-
-    # self.Gamma, self.panel_length, self.col = self.solve_vorticity(self.coor_c, self.Q_inf)
-    # _, _, self.dCp = solve_cp(self.Gamma, self.panel_length)
-
     def plt(self):
         upper_surface, lower_surface, _ = airfoil(self.NACA, self.n_panels)
-        # plt.figure(1)
         plt.plot(
-                *zip(*self.camberLine.coor), "k", 
+                *zip(*self.camberline.coor), "k", 
                 *zip(*upper_surface), "b", 
                 *zip(*lower_surface), "b",
                 )
         plt.axis("equal")
         plt.show()
 
+    def solve_cp(self):
+        dCp = dL = dP = np.zeros((self.camberline.n_panels, 1))
+        for i in range(len(self.camberline.vorticity.Gamma)):
+            # dL[i] = rho * v_inf * gamma
+            # dP[i] = rho * v_inf * Gamma[i] / panel_lengths[i]
+            dCp[i] = -2 * self.camberline.vorticity.Gamma[i] / self.camberline.panel_lengths[i] / self.v_inf
+        
+        x = [i[0] for i in self.camberline.collocation_points]
+        plt.plot(x, dCp)
+        plt.show()
+
 
 class CamberLine:
 
     def __init__(self, NACA, n_panels):
-        _, _, self.coor = airfoil(NACA, n_panels)
-        self.collocation_points, self.vortex_points, self.panel_angles, self.panel_length = panels(self.coor)
+        self.n_panels = n_panels
+        _, _, self.coor = airfoil(NACA, self.n_panels)
+        self.collocation_points, self.vortex_points, self.panel_angles, self.panel_lengths = panels(self.coor)
         self.normals, self.tangents = normals(self.panel_angles)
 
-    def vorticity(self):
-        
-
     def plt(self):
-        # plt.figure(2)
         plt.plot(
                 *zip(*self.coor), "k",
                 *zip(*self.collocation_points), 'o',
@@ -103,17 +76,17 @@ class CamberLine:
 
 
 class Vorticity:
-    def __init__(self, surface, Q_inf):
 
-        self.A = np.zeros((n_panels, n_panels))
-        self.RHS = np.zeros((n_panels, 1))
+    def __init__(self, camberline, Q_inf):
+        self.A = np.zeros((camberline.n_panels, camberline.n_panels))
+        self.RHS = np.zeros((camberline.n_panels, 1))
 
-        for i, col in enumerate(coor_col):
-            for j, vor in enumerate(coor_vor):
+        for i, col in enumerate(camberline.collocation_points):
+            for j, vor in enumerate(camberline.vortex_points):
                 q_ij = v_ind(col[0], col[1], vor[0], vor[1])
-                a_ij = np.dot(q_ij, normal[i])
-                A[i][j] = a_ij
-            RHS[i] = -np.dot(Q_inf, np.transpose(normal[i]))
+                a_ij = np.dot(q_ij, camberline.normals[i])
+                self.A[i][j] = a_ij
+            self.RHS[i] = -np.dot(Q_inf, np.transpose(camberline.normals[i]))
 
-        Gamma = np.linalg.solve(A, RHS)
-        return Gamma, panel_length, coor_col
+        self.Gamma = np.linalg.solve(self.A, self.RHS)
+    
