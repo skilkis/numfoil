@@ -22,12 +22,14 @@ from pytest import approx
 # Katz&Plotkin pg267
 def test_vorticity():
     """..."""
-    testfoil = PanelledAirfoil(Naca=[0,0,0,0], n_panels=5, alpha=1, v_inf=1)
+    testfoil = PanelledAirfoil(Naca=[0,0,0,0], n_panels=5, alpha=5, v_inf=1)
 
     ref = np.array([[2.46092],
                     [1.09374],
                     [0.70314],
                     [0.46876],
                     [0.27344]])
-    calc = testfoil.camberline.vorticity.Gamma / (pi * np.array([testfoil.camberline.panel_lengths]).T * sin(1))
-    assert calc == approx(ref)
+
+    calc = testfoil.camberline.vorticity.Gamma / (pi * np.array([testfoil.camberline.panel_lengths]).T * sin(testfoil.alpha))
+
+    assert calc == approx(ref, rel=5e-5)

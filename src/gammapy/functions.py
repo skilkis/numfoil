@@ -30,7 +30,7 @@ def v_comp(v_inf: float, alpha: float) -> np.ndarray:
     Returns:
         A velocity vector
     """
-    AoA = alpha * pi / 180
+    AoA = alpha  # /* pi / 180
     u_inf = v_inf * cos(AoA)
     w_inf = v_inf * sin(AoA)
     Q_inf = np.array([[u_inf, w_inf]])
@@ -80,11 +80,11 @@ def airfoil(Naca=[2, 4, 1, 0], n_panels=10):
     # using NACA 4 digit airfoil calculation to
     # obtain airfoil coordinate points = panel edges
     # ! -------------------------------------------
-    for beta in np.linspace(0, pi, N):
-        # cosine spacing
-        x = 0.5 - 0.5 * cos(beta)
+    # for beta in np.linspace(0, pi, N):
+    #     # cosine spacing
+    #     x = 0.5 - 0.5 * cos(beta)
         # ! -------------------------------------------
-        # for x in np.linspace(0, 1, N):
+    for x in np.linspace(0, 1, N):
         # ! -------------------------------------------
         # thickness distribution
         y_t = (
