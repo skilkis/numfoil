@@ -32,7 +32,7 @@ class PanelledAirfoil:
         self.n_panels = n_panels    # Number of panels per surface
         self.NACA = Naca            # NACA XXXX digits of 4-digit airfoil
 
-        self.Q_inf = v_comp(v_inf, alpha)
+        self.Q_inf = v_comp(self.v_inf, self.alpha)
         self.camberline = CamberLine(self.NACA, self.n_panels)
         # setattr(self.camberline, 'vorticity', Vorticity(self.camberline, v_inf, alpha))
         setattr(self.camberline, 'vorticity', Vorticity(self.camberline, self.Q_inf))
@@ -96,4 +96,36 @@ class Vorticity:
 
 
         self.Gamma = np.linalg.solve(self.A, self.RHS)
+
+
+# ! ---------------------------------------------------------------------------
+
+# class PanelSolver:
+
+#     def __init__(self, airfoil, mode='camberline'):
+#         self.airfoil = airfoil
+#         self.mode = mode
+#         self.panels = discritize(self, self.airfoil, self.mode)
+
     
+#     def create_influence_matrix(self, panels):
+#         self.A = np.zeros((panels.n_panels, panels.n_panels))
+#         for i, col in enumerate(panels.collocation_points):
+#             for j, vor in enumerate(panels.vortex_points):
+#                 q_ij = v_ind(col[0], col[1], vor[0], vor[1])
+#                 a_ij = np.dot(q_ij, panels.normals[i])
+#                 self.A[i][j] = a_ij
+#         return self.A
+    
+#     def create_RHS(self, panels, Q_inf):
+#         self.RHS[i] = -np.dot(Q_inf, np.transpose(panels.normals[i]))
+#         # self.RHS[i] = -v_inf * sin(alpha + panels.panel_angles[i])
+#         return self.RHS
+    
+#     def solve_vorticity(self, A, RHS):
+#         self.Gamma = np.linalg.solve(self.A, self.RHS)
+#         return self.Gamma
+    
+#     def get_cp(self):
+#         pass
+

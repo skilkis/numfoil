@@ -31,5 +31,5 @@ def test_vorticity():
                     [0.27344]])
 
     calc = testfoil.camberline.vorticity.Gamma / (pi * np.array([testfoil.camberline.panel_lengths]).T * sin(testfoil.alpha))
-
+    
     assert calc == approx(ref, rel=5e-5)
