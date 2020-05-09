@@ -63,11 +63,11 @@ def solve_cp(Gamma, panel_length):
     return dL, dP, dCp
 
 
-Gamma_u, panel_length_u, col_u = solve_vorticity(coor_u)
-Gamma_l, panel_length_l, col_l = solve_vorticity(coor_l)
+# Gamma_u, panel_length_u, col_u = solve_vorticity(coor_u)
+# Gamma_l, panel_length_l, col_l = solve_vorticity(coor_l)
 
-_, dP_u, Cp_u = solve_cp(Gamma_u, panel_length_u)
-_, dP_l, Cp_l = solve_cp(Gamma_l, panel_length_l)
+# _, dP_u, Cp_u = solve_cp(Gamma_u, panel_length_u)
+# _, dP_l, Cp_l = solve_cp(Gamma_l, panel_length_l)
 
 
 # * plotting * #
@@ -91,17 +91,3 @@ def pt(set: List[list], i: int) -> list:
     for point in set:
         p.append(point[i])
     return p
-
-
-plt.figure(1)
-plt.plot(
-    *zip(*coor_c), "k", *zip(*coor_u), "b", *zip(*coor_l), "b",
-)
-plt.axis("equal")
-plt.show()
-
-plt.figure(2)
-x_u = [i[0] for i in col_u]
-x_l = [i[0] for i in col_l]
-plt.plot(x_u, -Cp_u, "b", x_l, Cp_l, "g")
-plt.show()
