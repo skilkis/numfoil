@@ -12,23 +12,24 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-from gammapy.functions import airfoil, v_comp
-from gammapy.panel.vortex_sheet import solve_vorticity as solve_vorticity
-import numpy as np
-from math import sin, pi
+# from math import pi, sin
 
+# import numpy as np
+
+# from gammapy.functions import airfoil, v_comp
+# from gammapy.panel.vortex_sheet import solve_vorticity as solve_vorticity
 
 # Katz&Plotkin pg267
-def test_vorticity():
-    """..."""
-    Q_inf = v_comp(1, 1)
-    _, _, coor_c = airfoil([0, 0, 0, 0], 5)
-    Gamma, panel_length, _, _ = solve_vorticity(coor_c, Q_inf)
-    ref = np.array([[2.46092],
-                    [1.09374],
-                    [0.70314],
-                    [0.46876],
-                    [0.27344]])
-    calc = Gamma / (pi * np.array([panel_length]).T * sin(1))
-    
-    pass
+# def test_vorticity():
+#     """..."""
+#     Q_inf = v_comp(1, 1)
+#     _, _, coor_c = airfoil([0, 0, 0, 0], 5)
+#     Gamma, panel_length, _, _ = solve_vorticity(coor_c, Q_inf)
+#     ref = np.array([[2.46092],
+#                     [1.09374],
+#                     [0.70314],
+#                     [0.46876],
+#                     [0.27344]])
+#     calc = Gamma / (pi * np.array([panel_length]).T * sin(1))
+
+#     pass
