@@ -83,6 +83,7 @@ MAGNITUDE_2D_TEST_CASES = {
 
 @pytest.mark.parametrize(**MAGNITUDE_2D_TEST_CASES)
 def test_magnitude_2d(array, expected_result):
+    """Tests if magnitude of 2D vectors works correctly."""
     result = magnitude_2d(array)
     assert np.allclose(result, expected_result)
     assert result.dtype == expected_result.dtype
