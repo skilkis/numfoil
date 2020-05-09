@@ -123,7 +123,6 @@ class Airfoil(metaclass=ABCMeta):
             )
 
 
-# TODO change it to the xfoil string input
 class NACA4Airfoil(Airfoil):
     """Creates a NACA 4 series :py:class:`Airfoil` from digit input.
 
@@ -186,9 +185,6 @@ class NACA4Airfoil(Airfoil):
             )
         return pts_c
 
-    # TODO Test non-cambered airfoil
-    # TODO Test cambered airfoil
-    # TODO Test single x and vector x
     def camber_tangent_at(self, x: Union[float, np.ndarray]) -> np.ndarray:
         """Returns the camber-line tangent vector at supplied ``x``."""
         # Setting up chord-line and camber-line tangent arrays
