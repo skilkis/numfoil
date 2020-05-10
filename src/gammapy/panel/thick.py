@@ -83,20 +83,26 @@ class Solver:
         Gamma = np.linalg.solve(self.coefficients.AN, self.get_RHS(alpha))
         return Gamma
 
-# ! ---------------------------------------------------------------------------
-
-    def solve_Cp(self, AoA=0, plot=False):
-        alpha = AoA * pi / 180
-
-        Gamma = self.solve_vorticity(alpha)
-
-        dCp, v_ind = map(np.copy, [np.zeros((self.panels.n_panels, 1))] *2)
+    def get_v_ind(self, alpha, Gamma):
+        v_ind = np.zeros((self.panels.n_panels, 1))
 
         for i in range(self.panels.n_panels):
             v_ind[i] = cos(self.panels.panel_angles[i] - alpha)
             for j in range(self.panels.n_panels+1):
-                v_ind[i] += self.coefficients.AT[i][j] * Gamma[j]
-            
+                v_ind[i] = v_ind[i] + self.coefficients.AT[i][j] * Gamma[j]
+        
+        return v_ind
+
+# ! ---------------------------------------------------------------------------
+
+    def solve_Cp(self, alpha=8, plot=False):
+        alpha = alpha * pi / 180
+        Gamma = self.solve_vorticity(alpha)
+
+        dCp = np.zeros((self.panels.n_panels, 1))
+        v_ind = self.get_v_ind(alpha, Gamma)
+
+        for i in range(self.panels.n_panels):           
             dCp[i] = 1 - v_ind[i]**2
         
         if plot is True:
@@ -218,7 +224,7 @@ class Coefficients:
 
 
 
-# foil = ThickPanelledAirfoil(Naca='2412', n_panels=100)
+# foil = ThickPanelledAirfoil(Naca='2412', n_panels=10)
 # foil.panels.plt()
-# solver = solver(foil.panels, AoA=8)
-# Cp = solver.solve_Cp(plot=True)
+# solver = Solver(foil.panels)
+# Cp = solver.solve_Cp(alpha=8, plot=True)

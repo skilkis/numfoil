@@ -14,13 +14,14 @@
 
 from gammapy.panel.thick import ThickPanelledAirfoil, Solver
 import numpy as np
+from math import pi
 from pytest import approx
 import pytest
 
 @pytest.fixture(scope='module')
 def solver_obj():
     testfoil = ThickPanelledAirfoil(Naca='2412', n_panels=10, v_inf=1)
-    return Solver(testfoil.panels, AoA=8)
+    return Solver(testfoil.panels)
 
 def test_A(solver_obj):
     calc = solver_obj.coefficients.A
@@ -183,12 +184,6 @@ def test_CT1(solver_obj):
         2.08462691e-02, 1.57079633e+00]])
     assert calc == approx(ref, rel=5e-5)
 
-def test_RHS(solver_obj):
-    calc = solver_obj.RHS
-    ref = np.array([ 0.06498711,  0.07147468,  0.0885728 ,  0.14883974,  0.48101857,
-        0.38369263, -0.04156756, -0.20904692, -0.28724817, -0.33027553,
-        0.        ])
-    assert calc == approx(ref.reshape(ref.size, 1), rel=5e-5)
 
 def test_At(solver_obj):
     calc = solver_obj.coefficients.AT
@@ -267,16 +262,34 @@ def test_AN(solver_obj):
     
     assert calc == approx(ref, rel=5e-5)
 
+
+def test_RHS(solver_obj):
+    calc = solver_obj.get_RHS(alpha=8/180*pi)
+    ref = np.array([ 0.06498711,  0.07147468,  0.0885728 ,  0.14883974,  0.48101857,
+        0.38369263, -0.04156756, -0.20904692, -0.28724817, -0.33027553,
+        0.        ])
+    assert calc == approx(ref.reshape(ref.size, 1), rel=5e-5)
+
 def test_Gamma(solver_obj):
-    solver_obj.solve_vorticity()
-    calc = solver_obj.Gamma
+    calc = solver_obj.solve_vorticity(alpha=8/180*pi)
     ref = np.array([-0.04925277, -0.13912607, -0.14202391, -0.13722209, -0.11395583,
         0.18838509,  0.27053542,  0.22651428,  0.19311638,  0.16234484,
         0.04925277])
     assert calc == approx(ref.reshape(ref.size, 1), rel=5e-5)
 
+def test_v_ind(solver_obj):
+    calc = solver_obj.get_v_ind(alpha=8/180*pi, Gamma=solver_obj.solve_vorticity(alpha=8/180*pi))
+    ref = np.array([-0.85013908, -0.89732153, -0.87555913, -0.78483922, -0.08752438,
+        1.62253578,  1.51914356,  1.30421161,  1.12729783,  0.92407688])
+    assert calc == approx(ref.reshape(ref.size, 1), rel=5e-5)
+
 def test_CP(solver_obj):
-    calc = solver_obj.solve_Cp()
+    calc = solver_obj.solve_Cp(alpha=8, plot=False)
     ref = np.array([ 0.27726354,  0.19481407,  0.23339621,  0.38402739,  0.99233948,
        -1.63262237, -1.30779717, -0.70096792, -0.2708004 ,  0.14608192])
     assert calc == approx(ref.reshape(ref.size, 1), rel=5e-5)
+
+
+
+
+
