@@ -11,16 +11,21 @@ import pylab as pl
 
 class ThickPanelledAirfoil:
 
-    def __init__(self, Naca='2422', n_panels=10, v_inf=1):
-        # self.alpha = alpha *pi/180  # angle of attack
-        # self.v_inf = v_inf          # freestream velocity
-        self.n_panels = n_panels    # Number of panels per surface
-        self.NACA = list(map(int, Naca))            # NACA XXXX digits of 4-digit airfoil
+    def __init__(self, Naca='2422', n_panels=10):
+        self.n_panels = n_panels            # Number of panels per surface
+        self._naca = None
+        self.panels = None
+        self.NACA = Naca   # NACA XXXX digits of 4-digit airfoil
 
-        # self.Q_inf = v_comp(v_inf, self.alpha)
+    @property
+    def NACA(self):
+        return self._naca
+
+    @NACA.setter
+    def NACA(self, value):
+        self._naca = list(map(int, value))
+        self.panels = panels(self._naca, self.n_panels)
         
-        self.panels = panels(self.NACA, self.n_panels)
-
     
     def plt(self):
         upper_surface, lower_surface, coor_c = airfoil(self.NACA, self.n_panels)
@@ -73,15 +78,18 @@ class panels:
 class Solver:
     def __init__(self, panels):
         self.panels = panels
-
         self.coefficients = Coefficients(self.panels)
-        # self.get_RHS()
-        # self.solve_vorticity()
-
 
     def solve_vorticity(self, alpha):
         Gamma = np.linalg.solve(self.coefficients.AN, self.get_RHS(alpha))
         return Gamma
+    
+    def get_RHS(self, alpha):
+        RHS = np.zeros((self.panels.n_panels+1, 1))
+        for i in range(self.panels.n_panels):
+            RHS[i] = sin(self.panels.panel_angles[i] - alpha)
+        RHS[self.panels.n_panels] = 0
+        return RHS
 
     def get_v_ind(self, alpha, Gamma):
         v_ind = np.zeros((self.panels.n_panels, 1))
@@ -93,7 +101,6 @@ class Solver:
         
         return v_ind
 
-# ! ---------------------------------------------------------------------------
 
     def solve_Cp(self, alpha=8, plot=False):
         alpha = alpha * pi / 180
@@ -115,14 +122,7 @@ class Solver:
 
         return dCp
 
-# ! ---------------------------------------------------------------------------
 
-    def get_RHS(self, alpha):
-        RHS = np.zeros((self.panels.n_panels+1, 1))
-        for i in range(self.panels.n_panels):
-            RHS[i] = sin(self.panels.panel_angles[i] - alpha)
-        RHS[self.panels.n_panels] = 0
-        return RHS
     
 class Coefficients:
 

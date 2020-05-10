@@ -20,7 +20,7 @@ import pytest
 
 @pytest.fixture(scope='module')
 def solver_obj():
-    testfoil = ThickPanelledAirfoil(Naca='2412', n_panels=10, v_inf=1)
+    testfoil = ThickPanelledAirfoil(Naca='2412', n_panels=10)
     return Solver(testfoil.panels)
 
 def test_A(solver_obj):
