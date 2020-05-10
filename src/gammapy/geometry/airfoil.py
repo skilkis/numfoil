@@ -282,8 +282,7 @@ class NACA4Airfoil(Airfoil):
                 name=self.name, te_shape="Closed" if self.te_closed else "Open"
             )
         )
-        ax.set_ylim(-0.5, 0.5)
-
+        plt.axis("equal")
         plt.show() if show else ()  # Rendering plot window if show is true
 
         return fig, ax
