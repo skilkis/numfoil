@@ -15,13 +15,16 @@
 """Collections of test helpers for the GammaPy package."""
 
 import os
+from collections import namedtuple
 from functools import partial
 from typing import Generator
 
 import numpy as np
+import pytest
 import scipy.interpolate as si
 
 
+# TODO move helpers outside to the main tests directory
 def get_naca_airfoils(directory: str) -> Generator[str, None, None]:
     """Retrieves the NACA 4 series airfoil files in ``directory``."""
     files = filter(
@@ -68,3 +71,62 @@ def calc_curve_error(
     pts_2 = np.array(splev(u, spl_2))
 
     return np.sum((pts_1 - pts_2) ** 2)
+
+
+Scenario = namedtuple("Scenario", "obj, label")
+
+
+class ScenarioTestSuite:
+    """Allows one to create parameterized instances for all tests.
+
+    The `scenario` fixture is passed onto test methods that use it
+    through dependency injection. Within the test method the `scenario`
+    local variable then will be a namedtuple containing the instantiated
+    object as `.obj`, and its label as `.label` which can
+    be used to retrieve expected values as follows::
+
+        class TestTuple(ScenarioTestSuite):
+
+            SCENARIOS = {
+                "length=2": tuple(1, 2),
+                "length=3": tuple(1, 2, 3),
+            }
+
+            EXPECTED_LENGTH = {
+                "length=2": 2,
+                "length=3": 3,
+            }
+
+            def test_length(self, scenario)
+                obj = scenario.obj
+                label = scenario.label
+                # Unpacking can also be used as a shorthand:
+                # obj, label = scenario
+                assert len(obj) == self.EXPECTED_LENGTH[label]
+    """
+
+    SCENARIOS = None
+
+    @pytest.fixture(scope="class")
+    def scenario(self, scenario_object) -> Scenario:
+        """Returns a :py:class:`Scenario` namedtuple.
+
+        The namedtuple has accesible attributes `obj` and `label`
+        which can also be unpacked as follows::
+
+            obj, label = scenario
+
+        """
+        return scenario_object
+
+    def pytest_generate_tests(self, metafunc) -> None:
+        """Parametizes `scenario` fixture with :py:class:`Scenario`s."""
+        if "scenario" in metafunc.fixturenames:
+            metafunc.parametrize(
+                argnames="scenario_object",
+                argvalues=map(
+                    Scenario, self.SCENARIOS.values(), self.SCENARIOS.keys(),
+                ),
+                scope="class",
+                ids=self.SCENARIOS.keys(),
+            )
