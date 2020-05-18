@@ -45,13 +45,21 @@ class Panel2D(np.ndarray):
         """Creates a :py:class:`Panel2D` instance from ``array``.
 
         Args:
-            array: A 2D Numpy array containing n row-vectors.
+            array: A 2D Numpy array containing n row-vectors that
+                describes a set of 2D points through which the
+                panels should be built.
         """
         array = np.array(array) if not isinstance(array, np.ndarray) else array
         assert is_row_vector(array)
         if array.shape[0] < 2:
             raise ValueError("A panel requires at least 2 points")
         return np.asarray(array, dtype=np.float64).view(cls)
+
+    @property
+    def n_panels(self) -> int:
+        """Returns the number of panels of the current instance."""
+        rows, cols = self.shape
+        return rows - 1
 
     @property
     def nodes(self) -> Tuple[np.ndarray, np.ndarray]:
@@ -68,6 +76,12 @@ class Panel2D(np.ndarray):
     def normals(self) -> np.ndarray:
         """Returns unit normal vectors of all panels."""
         return rotate_2d_90ccw(self.tangents)
+
+    @property
+    def angles(self) -> np.ndarray:
+        """Returns the panel angle w.r.t the primary-axis in radians."""
+        tangents = self.tangents
+        return np.arctan2(tangents[:, 1], tangents[:, 0])[..., None]
 
     @property
     def lengths(self) -> np.ndarray:
@@ -121,7 +135,7 @@ class Panel2D(np.ndarray):
                 width=2e-3,
                 zorder=2,
             )
-        plt.scatter(pts_mid[:, 0], pts_mid[:, 1], s=2, color="black", zorder=2)
+        ax.scatter(pts_mid[:, 0], pts_mid[:, 1], s=2, color="black", zorder=2)
         ax.legend(loc="best")
         ax.set_xlabel("Principal Axis [-]")
         ax.set_ylabel("Secondary Axis [-]")

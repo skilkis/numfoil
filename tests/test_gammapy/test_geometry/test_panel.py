@@ -61,6 +61,16 @@ class TestPanel2D(ScenarioTestSuite):
         for attr in ("nodes", "tangents", "normals", "lengths", "points_at"):
             assert hasattr(result, attr)
 
+    EXPECTED_N_PANELS = {
+        "plate": 1,
+        "trapezoid": 3,
+        "bucket": 5,
+    }
+
+    def test_n_panels(self, scenario):
+        """Tests that the number of panels is correctly returned."""
+        assert scenario.obj.n_panels == self.EXPECTED_N_PANELS[scenario.label]
+
     EXPECTED_NODES = {
         "plate": (np.array([[0, 0]]), np.array([[1, 0]])),
         "trapezoid": (
@@ -79,10 +89,12 @@ class TestPanel2D(ScenarioTestSuite):
         expected = self.EXPECTED_NODES[scenario.label]
         assert all(np.allclose(r, e) for r, e in zip(result, expected))
 
-    SQ_22 = np.sqrt(2) / 2  # x and y vector components of a 45 deg panel
+    SQRT_22 = np.sqrt(2) / 2  # x and y vector components of a 45 deg panel
     EXPECTED_TANGENTS = {
         "plate": np.array([[1, 0]]),
-        "trapezoid": np.array([[SQ_22, SQ_22], [1, 0], [SQ_22, -SQ_22]]),
+        "trapezoid": np.array(
+            [[SQRT_22, SQRT_22], [1, 0], [SQRT_22, -SQRT_22]]
+        ),
         "bucket": np.array([[-1, 0], [0, -1], [-1, 0], [0, 1], [-1, 0]]),
     }
 
@@ -94,7 +106,9 @@ class TestPanel2D(ScenarioTestSuite):
 
     EXPECTED_NORMALS = {
         "plate": np.array([[0, 1]]),
-        "trapezoid": np.array([[-SQ_22, SQ_22], [0, 1], [SQ_22, SQ_22]]),
+        "trapezoid": np.array(
+            [[-SQRT_22, SQRT_22], [0, 1], [SQRT_22, SQRT_22]]
+        ),
         "bucket": np.array([[0, -1], [1, 0], [0, -1], [-1, 0], [0, -1]]),
     }
 
@@ -104,9 +118,20 @@ class TestPanel2D(ScenarioTestSuite):
         expected = self.EXPECTED_NORMALS[scenario.label]
         assert np.allclose(result, expected)
 
+    EXPECTED_ANGLES = {
+        "plate": np.array([[0]]),
+        "trapezoid": np.radians([[45], [0], [-45]]),
+        "bucket": np.radians(([180], [-90], [180], [90], [180])),
+    }
+
+    def test_angles(self, scenario):
+        """Tests if the correct panel angles are returned."""
+        result = scenario.obj.angles
+        assert result == pytest.approx(self.EXPECTED_ANGLES[scenario.label])
+
     EXPECTED_LENGTHS = {
         "plate": np.array([[1]]),
-        "trapezoid": np.array([SQ_22 * 2, 1, SQ_22 * 2]).reshape(3, 1),
+        "trapezoid": np.array([SQRT_22 * 2, 1, SQRT_22 * 2]).reshape(3, 1),
         "bucket": np.array([1, 1, 1, 1, 2]).reshape(5, 1),
     }
 
