@@ -1,7 +1,7 @@
 
 from math import pi, sin, cos, tan, atan, atan2
 import numpy as np
-from gammapy.thick_functions import airfoil, normals, make_panels, v_comp, v_ind
+from gammapy.thick_functions import airfoil, normals, make_panels, v_comp, v_ind_loc
 import matplotlib.pyplot as plt
 import pylab as pl
 
@@ -80,6 +80,49 @@ class Solver:
         self.panels = panels
         self.coefficients = Coefficients(self.panels)
 
+
+    def solve_Cp(self, alpha=8, plot=True):
+        alpha = alpha * pi / 180
+        Gamma = self.solve_vorticity(alpha)
+
+        Cp = np.zeros((self.panels.n_panels, 1))
+        v_ind = self.get_v_ind(alpha, Gamma)
+
+        for i in range(self.panels.n_panels):           
+            Cp[i] = 1 - v_ind[i]**2
+        
+        if plot is True:
+            x = [i[0] for i in self.panels.collocation_points]
+            
+            plt.figure(3)
+            plt.plot(x, Cp, "k")
+            # plt.gca().set_ylim([-5,1])
+            plt.gca().invert_yaxis()
+            plt.show()
+
+        return Cp
+    
+    def get_dCp(self, alpha=8, plot=True):
+        Cp = self.solve_Cp(alpha)
+        mid = int(len(Cp)/2)
+        Cp_u = Cp[mid:]
+        Cp_l = Cp[:mid]
+        Cp_l = np.flip(Cp_l)
+        dCp = Cp_u - Cp_l
+
+        if plot is True:
+            x = [i[0] for i in self.panels.collocation_points[mid:]]
+            plt.figure(4)
+            plt.plot(x, dCp, "k")
+            # plt.gca().set_ylim([-5,1])
+            plt.gca().invert_yaxis()
+            plt.show()
+        
+        return Cp_u, Cp_l
+
+    
+
+
     def solve_vorticity(self, alpha):
         Gamma = np.linalg.solve(self.coefficients.AN, self.get_RHS(alpha))
         return Gamma
@@ -100,27 +143,6 @@ class Solver:
                 v_ind[i] = v_ind[i] + self.coefficients.AT[i][j] * Gamma[j]
         
         return v_ind
-
-
-    def solve_Cp(self, alpha=8, plot=False):
-        alpha = alpha * pi / 180
-        Gamma = self.solve_vorticity(alpha)
-
-        dCp = np.zeros((self.panels.n_panels, 1))
-        v_ind = self.get_v_ind(alpha, Gamma)
-
-        for i in range(self.panels.n_panels):           
-            dCp[i] = 1 - v_ind[i]**2
-        
-        if plot is True:
-            x = [i[0] for i in self.panels.collocation_points]
-            plt.figure(3)
-            plt.plot(x, dCp, "k")
-            # plt.gca().set_ylim([-5,1])
-            plt.gca().invert_yaxis()
-            plt.show()
-
-        return dCp
 
 
     
@@ -223,8 +245,9 @@ class Coefficients:
 
 
 
-
-# foil = ThickPanelledAirfoil(Naca='2412', n_panels=10)
-# foil.panels.plt()
-# solver = Solver(foil.panels)
-# Cp = solver.solve_Cp(alpha=8, plot=True)
+if __name__ == '__main__':
+    foil = ThickPanelledAirfoil(Naca='2412', n_panels=100)
+    foil.panels.plt()
+    solver = Solver(foil.panels)
+    Cp = solver.solve_Cp(alpha=8, plot=True)
+    u, l = solver.get_dCp(Cp, plot=True)

@@ -14,7 +14,7 @@
 
 """Contains useful geometric functions for airfoils and vectors."""
 
-from math import atan, cos, pi, sin, sqrt, atan2
+from math import atan, cos, pi, sin, sqrt, atan2, log
 from typing import List, Tuple
 
 import numpy as np
@@ -177,8 +177,8 @@ def make_panels(coor: list) -> Tuple[list, list, list, list]:
 
 
 # TODO vectorize this function using either numpy or numba
-def v_ind(
-    x_col: float, y_col: float, x_vor: float, y_vor: float, Gamma: float = 1
+def v_ind_loc(
+    x_col: float, y_col: float, x1_panel: float, y1_panel: float, x2_panel: float, y2_panel: float, gamma: float = 1
 ) -> np.ndarray:
     """Finds induced velocity at a point ``x_col``, ``y_col``.
 
@@ -197,10 +197,13 @@ def v_ind(
         y: vertical component of induced velocity due to vortex
     """
 
-    r = sqrt((x_col - x_vor) ** 2 + (y_col - y_vor) ** 2)
-    u = Gamma / (2 * pi * r ** 2) * (y_col - y_vor)  # horizontal component
-    w = -Gamma / (2 * pi * r ** 2) * (x_col - x_vor)  # vertical component
-    return np.array([u, w])
+    u_p = gamma / ( 2 * pi) * ( atan2( (y_col - y2_panel),  (x_col - x2_panel) ) 
+                              - atan2( (y_col - y1_panel), (x_col - x1_panel) ) )
+    w_p = -gamma / ( 4 * pi) * log( 
+        ( (x_col - x1_panel)**2 + (y_col - y1_panel)**2 )/( (x_col - x2_panel)**2 + (y_col - y2_panel)**2) 
+        )
+
+    return np.array([u_p, w_p])
 
 
 def normals(thetas: list) -> Tuple[List[np.ndarray], List[np.ndarray]]:
@@ -222,4 +225,4 @@ def normals(thetas: list) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         t_i = np.array([cos(theta), -sin(theta)])  # tangent vector
         normals.append(n_i)
         tangents.append(t_i)
-    return normals, tangents
+    return np.array(normals), np.array(tangents)
