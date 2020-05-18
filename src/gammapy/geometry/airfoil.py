@@ -16,8 +16,7 @@
 
 import re
 from abc import ABCMeta, abstractmethod
-from functools import lru_cache
-from typing import Optional, Tuple, Union
+from typing import Tuple, Union
 
 import matplotlib
 import numpy as np
@@ -92,35 +91,6 @@ class Airfoil(metaclass=ABCMeta):
         if len(x.shape) != 1:
             raise ValueError("Only 1-D np.arrays are supported")
         return x
-
-    @staticmethod
-    @lru_cache
-    def get_sample_points(
-        n_points: int, spacing: Optional[str] = "cosine"
-    ) -> np.ndarray:
-        """Returns a number of ``n_points`` on the chord-line.
-
-        These points will be for
-
-        Args:
-            n_points: Number of points to sample on the chord-line.
-            spacing: Sets the spacing used for the points on the
-                chord-line. Available options are "cosine" and "linear".
-                A linear spacing will return an array of points that are
-                equidistant from each other. Whereas a cosine spacing
-                will increase the accuracy of some aerodynamic solvers
-                by increasing the density of points close to the
-                leading and trailing edges. Defaults to "cosine".
-        """
-        if spacing == "cosine":
-            return 0.5 * (1 - np.cos(np.linspace(0, np.pi, num=n_points)))
-        elif spacing == "linear":
-            return np.linspace(0, 1, num=n_points)
-        else:
-            raise ValueError(
-                f'The supplied `spacing` value of "{spacing}" is invalid. '
-                'Please specify either "cosine" or "linear".'
-            )
 
 
 class NACA4Airfoil(Airfoil):
