@@ -108,14 +108,14 @@ class Solver:
         Cp_u = Cp[mid:]
         Cp_l = Cp[:mid]
         Cp_l = np.flip(Cp_l)
-        dCp = Cp_u - Cp_l
+        dCp = Cp_l - Cp_u
 
         if plot is True:
             x = [i[0] for i in self.panels.collocation_points[mid:]]
             plt.figure(4)
             plt.plot(x, dCp, "k")
             # plt.gca().set_ylim([-5,1])
-            plt.gca().invert_yaxis()
+            # plt.gca().invert_yaxis()
             plt.show()
         
         return Cp_u, Cp_l
@@ -250,4 +250,4 @@ if __name__ == '__main__':
     foil.panels.plt()
     solver = Solver(foil.panels)
     Cp = solver.solve_Cp(alpha=8, plot=True)
-    u, l = solver.get_dCp(Cp, plot=True)
+    u, l = solver.get_dCp(alpha=8, plot=True)
