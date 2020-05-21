@@ -81,7 +81,7 @@ class Solver:
         self.coefficients = Coefficients(self.panels)
 
 
-    def solve_Cp(self, alpha=8, plot=True):
+    def solve_Cp(self, alpha=8, plot=False):
         alpha = alpha * pi / 180
         Gamma = self.solve_vorticity(alpha)
 
@@ -94,15 +94,13 @@ class Solver:
         if plot is True:
             x = [i[0] for i in self.panels.collocation_points]
             
-            plt.figure(3)
-            plt.plot(x, Cp, "k")
-            # plt.gca().set_ylim([-5,1])
-            plt.gca().invert_yaxis()
-            plt.show()
+            fig, ax = plt.subplots()
+            ax.plot(x, Cp, "k")
+            ax.invert_yaxis()
 
         return Cp
     
-    def get_dCp(self, alpha=8, plot=True):
+    def get_dCp(self, alpha=8, plot=False):
         Cp = self.solve_Cp(alpha)
         mid = int(len(Cp)/2)
         Cp_u = Cp[mid:]
@@ -112,16 +110,22 @@ class Solver:
 
         if plot is True:
             x = [i[0] for i in self.panels.collocation_points[mid:]]
-            plt.figure(4)
-            plt.plot(x, dCp, "k")
-            # plt.gca().set_ylim([-5,1])
-            # plt.gca().invert_yaxis()
-            plt.show()
+            fig, ax = plt.subplots()
+            ax.plot(x, dCp, "k")
         
-        return Cp_u, Cp_l
-
+        return dCp
     
-
+    def get_cl(self, dcp):
+        l = np.zeros((len(dcp), 1))
+        mid = int(self.panels.n_panels/2)
+        lengths = np.reshape(self.panels.panel_lengths[mid:], (mid,1))
+        angles = np.reshape(self.panels.panel_angles[mid:], (mid,1))
+        nodes = self.panels.panel_nodes[mid:]
+        
+        for i in range(mid):
+            l[i] = dcp[i] * (nodes[i+1][0] - nodes[i][0])
+            # l[i] = dcp[i] * lengths[i] * cos(angles[i])
+        return sum(l) 
 
     def solve_vorticity(self, alpha):
         Gamma = np.linalg.solve(self.coefficients.AN, self.get_RHS(alpha))
@@ -246,8 +250,15 @@ class Coefficients:
 
 
 if __name__ == '__main__':
-    foil = ThickPanelledAirfoil(Naca='2412', n_panels=100)
+    foil = ThickPanelledAirfoil(Naca='0012', n_panels=100)
     foil.panels.plt()
     solver = Solver(foil.panels)
-    Cp = solver.solve_Cp(alpha=8, plot=True)
-    u, l = solver.get_dCp(alpha=8, plot=True)
+    Cp = solver.solve_Cp(alpha=8, plot=False)
+    dCp = solver.get_dCp(alpha=8, plot=False)
+
+    l = solver.get_cl(dCp)
+    print('Cl = ', l)
+
+    
+
+    
