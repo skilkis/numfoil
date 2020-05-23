@@ -115,7 +115,8 @@ class Solver:
         
         return dCp
     
-    def get_cl(self, dcp):
+    def get_cl(self, alpha):
+        dcp = self.get_dCp(alpha=alpha)
         l = np.zeros((len(dcp), 1))
         mid = int(self.panels.n_panels/2)
         lengths = np.reshape(self.panels.panel_lengths[mid:], (mid,1))
@@ -250,13 +251,13 @@ class Coefficients:
 
 
 if __name__ == '__main__':
-    foil = ThickPanelledAirfoil(Naca='0012', n_panels=100)
-    foil.panels.plt()
+    foil = ThickPanelledAirfoil(Naca='0012', n_panels=12)
+    foil.panels.plt(points=True, num=True)
     solver = Solver(foil.panels)
     Cp = solver.solve_Cp(alpha=8, plot=False)
     dCp = solver.get_dCp(alpha=8, plot=False)
 
-    l = solver.get_cl(dCp)
+    l = solver.get_cl(alpha=8)
     print('Cl = ', l)
 
     
