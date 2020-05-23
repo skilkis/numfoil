@@ -291,3 +291,24 @@ class NACA4Airfoil(Airfoil):
             return map(int, digits)
         else:
             raise ValueError("NACA code must contain 4 numbers")
+
+
+class ParabolicCamberAirfoil(NACA4Airfoil):
+
+    def __init__(self, eta: float = 0.1):
+        self.eta = eta
+
+    def camberline_at(self, x: Union[float, np.ndarray]) -> np.ndarray:
+        """Returns camber-line points at the supplied ``x``."""
+        # Setting up chord-line and camber-line point arrays
+        x = self.ensure_1d_vector(x)
+        pts_c = np.zeros((x.size, 2))
+        pts_c[:, 0] = x
+
+        pts_c[..., 1] = 4 * self.eta * (x - x**2)
+        return pts_c
+
+    @property
+    def name(self) -> str:
+        """Returns the name of the airfoil from current attributes."""
+        return f"ParabolicCamber(e={self.eta:.0f})"
