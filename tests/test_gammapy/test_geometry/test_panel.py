@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 from matplotlib.quiver import Quiver
 
+from gammapy.geometry.geom2d import Point2D, Vector2D
 from gammapy.geometry.panel import Panel2D
 from tests.test_gammapy.helpers import ScenarioTestSuite
 
@@ -88,6 +89,7 @@ class TestPanel2D(ScenarioTestSuite):
         result = scenario.obj.nodes
         expected = self.EXPECTED_NODES[scenario.label]
         assert all(np.allclose(r, e) for r, e in zip(result, expected))
+        assert all(isinstance(r, Point2D) for r in result)
 
     SQRT_22 = np.sqrt(2) / 2  # x and y vector components of a 45 deg panel
     EXPECTED_TANGENTS = {
@@ -103,6 +105,7 @@ class TestPanel2D(ScenarioTestSuite):
         result = scenario.obj.tangents
         expected = self.EXPECTED_TANGENTS[scenario.label]
         assert np.allclose(result, expected)
+        assert isinstance(result, Vector2D)
 
     EXPECTED_NORMALS = {
         "plate": np.array([[0, 1]]),
@@ -117,6 +120,7 @@ class TestPanel2D(ScenarioTestSuite):
         result = scenario.obj.normals
         expected = self.EXPECTED_NORMALS[scenario.label]
         assert np.allclose(result, expected)
+        assert isinstance(result, Vector2D)
 
     EXPECTED_ANGLES = {
         "plate": np.array([[0]]),
@@ -128,6 +132,7 @@ class TestPanel2D(ScenarioTestSuite):
         """Tests if the correct panel angles are returned."""
         result = scenario.obj.angles
         assert result == pytest.approx(self.EXPECTED_ANGLES[scenario.label])
+        assert isinstance(result, np.ndarray)
 
     EXPECTED_LENGTHS = {
         "plate": np.array([[1]]),
@@ -140,6 +145,7 @@ class TestPanel2D(ScenarioTestSuite):
         result = scenario.obj.lengths
         expected = self.EXPECTED_LENGTHS[scenario.label]
         assert np.allclose(result, expected)
+        assert isinstance(result, np.ndarray)
 
     @pytest.mark.parametrize("u", (0, 0.25, 0.5, 0.75, 1.0))
     def test_points_at(self, scenario, u):
@@ -160,6 +166,9 @@ class TestPanel2D(ScenarioTestSuite):
 
             # Testing if the pt corresponds to the correct u parameter
             assert length_AC / length_AB == pytest.approx(u)
+
+        # Testing that the points returned are instances of Point2D
+        assert isinstance(pts, Point2D)
 
     def test_plot(self, scenario):
         """Tests if inputs work and all plot elements are rendered."""

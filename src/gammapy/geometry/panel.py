@@ -20,15 +20,11 @@ import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
 
-from .vector2d import (
-    is_row_vector,
-    magnitude_2d,
-    normalize_2d,
-    rotate_2d_90ccw,
-)
+from .geom2d import Geom2D, Point2D, Vector2D
+from .vector2d import rotate_2d_90ccw
 
 
-class Panel2D(np.ndarray):
+class Panel2D(Geom2D):
     """Creates n-1 panels from a set of n points.
 
     Note:
@@ -41,7 +37,9 @@ class Panel2D(np.ndarray):
         array: A 2D Numpy array containing n row-vectors.
     """
 
-    def __new__(cls, array: Union[Sequence[Tuple[float, float]], np.ndarray]):
+    def __new__(
+        cls, array: Union[Sequence[Tuple[float, float]], np.ndarray, Point2D]
+    ):
         """Creates a :py:class:`Panel2D` instance from ``array``.
 
         Args:
@@ -49,11 +47,11 @@ class Panel2D(np.ndarray):
                 describes a set of 2D points through which the
                 panels should be built.
         """
+        array = super().__new__(cls, array)
         array = np.array(array) if not isinstance(array, np.ndarray) else array
-        assert is_row_vector(array)
         if array.shape[0] < 2:
             raise ValueError("A panel requires at least 2 points")
-        return np.asarray(array, dtype=np.float64).view(cls)
+        return array
 
     @property
     def n_panels(self) -> int:
@@ -62,18 +60,18 @@ class Panel2D(np.ndarray):
         return rows - 1
 
     @property
-    def nodes(self) -> Tuple[np.ndarray, np.ndarray]:
+    def nodes(self) -> Tuple[Point2D, Point2D]:
         """Returns a view on the start and end nodes of all panels."""
-        return self[:-1].view(np.ndarray), self[1:].view(np.ndarray)
+        return self[:-1].view(Point2D), self[1:].view(Point2D)
 
     @property
-    def tangents(self) -> np.ndarray:
+    def tangents(self) -> Vector2D:
         """Returns unit tangent vectors of all panels."""
         starts, ends = self.nodes
-        return normalize_2d(ends - starts, inplace=True)
+        return (ends - starts).normalized
 
     @property
-    def normals(self) -> np.ndarray:
+    def normals(self) -> Vector2D:
         """Returns unit normal vectors of all panels."""
         return rotate_2d_90ccw(self.tangents)
 
@@ -81,15 +79,16 @@ class Panel2D(np.ndarray):
     def angles(self) -> np.ndarray:
         """Returns the panel angle w.r.t the primary-axis in radians."""
         tangents = self.tangents
-        return np.arctan2(tangents[:, 1], tangents[:, 0])[..., None]
+        angles = np.arctan2(tangents.y, tangents.x)[..., None]
+        return angles.view(np.ndarray)
 
     @property
     def lengths(self) -> np.ndarray:
         """Returns length of all panels."""
         starts, ends = self.nodes
-        return magnitude_2d(ends - starts)
+        return (ends - starts).magnitude
 
-    def points_at(self, u: float) -> np.ndarray:
+    def points_at(self, u: float) -> Point2D:
         """Places points at normalized length ``u`` along each panel.
 
         Args:
@@ -117,25 +116,26 @@ class Panel2D(np.ndarray):
                 [1]: Matplotlib Axes instance
         """
 
-        pts = self  # Panel points is simply the input array
+        # Panel points is simply the input viewed as a Point2D object
+        pts = self.view(Point2D)
         n_pts = self.shape[0]
         pts_mid = self.points_at(0.5)
 
         fig, ax = plt.subplots()
-        ax.scatter(pts[:, 0], pts[:, 1], marker="o", label="Nodes")
-        ax.plot(pts[:, 0], pts[:, 1], label="Edges", zorder=1)
+        ax.scatter(pts.x, pts.y, marker="o", label="Nodes")
+        ax.plot(pts.x, pts.y, label="Edges", zorder=1)
         for vector in (self.tangents, self.normals):
             ax.quiver(
-                pts_mid[:, 0],
-                pts_mid[:, 1],
-                vector[:, 0],
-                vector[:, 1],
+                pts_mid.x,
+                pts_mid.y,
+                vector.x,
+                vector.y,
                 angles="xy",
                 scale=None,
                 width=2e-3,
                 zorder=2,
             )
-        ax.scatter(pts_mid[:, 0], pts_mid[:, 1], s=2, color="black", zorder=2)
+        ax.scatter(pts_mid.x, pts_mid.y, s=2, color="black", zorder=2)
         ax.legend(loc="best")
         ax.set_xlabel("Principal Axis [-]")
         ax.set_ylabel("Secondary Axis [-]")
