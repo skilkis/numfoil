@@ -7,21 +7,7 @@
 
 ## Installation
 
-### Install from Local Copy
-
-Go to https://github.com/kswannet/GammaPy and download a zip
-version of the repository. After unpacking the download, run a command-prompt
-open within the un-zipped `Aircraft_Aerodynamics` folder and use the following
-command from within the command-promt to install Γpy.
-
-``` cmd
-pip install gammapy
-```
-
-### Install from GitHub
-
-For users that already have [Git] installed on their system, the following
-command will install Γpy.
+Once [Git] is installed on the system the following command will install Γpy:
 
 ``` cmd
 pip install  git+https://github.com/kswannet/GammaPy.git
