@@ -12,17 +12,165 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-"""Contains the ABC definition of a panel method solver."""
+"""Contains definitions used to define a panel method solver."""
 
+import math
 from abc import ABCMeta, abstractmethod
-from typing import Optional, Sequence, Union
+from functools import cached_property
+from typing import Optional, Sequence, Type, Union
 
 import numpy as np
+from matplotlib import pyplot as plt
 
 from gammapy.geometry import Airfoil
 from gammapy.geometry.panel import Panel2D
 
-from .solution import FlowSolution
+FAST_MATH_FLAGS = {
+    # Refer to https://llvm.org/docs/LangRef.html#fast-math-flags
+    "nnan": True,
+    "ninf": True,
+    "nsz": True,
+    "arcp": True,
+    "contract": True,
+    "afn": True,
+    "reassoc": True,
+}
+
+BASE_NUMBA_CONFIG = {
+    "nopython": True,
+    "cache": True,
+    "fastmath": FAST_MATH_FLAGS,
+}
+
+
+class FlowSolution:
+    """Transforms a panel method solution into physical quantitites.
+
+    The output of a panel method are the strengths of the unknown
+    singularities placed along the discretized geometry. The
+    responsibility of this class is to use this data and output easily
+    understood physical quantities such as the lift coefficient and
+    pressure coefficient.
+
+    The main benefit of creating this class, other than adhering to the
+    Single Responsibility Principle (SRP) is to allow lazy evaluation of
+    the physical quantities. This means that if only the
+    pressure-coefficient is desired, then the equation for other
+    physical quantities, such as the lift coefficient, are not called.
+
+    Args:
+        method: The :py:class:`PanelMethod` used to obtain circulations
+        circulations: Output singularity strengths from
+            :py:class:`PanelMethod`. Assumed to contain N columns
+            pertaining to each Angle of Attack specified by ``alpha``.
+        density: Density of air in SI kilogram per meter cubed
+        velocity: Free-stream velocity in SI meter per second
+        alpha: Angle of Attack in SI degree.
+
+    Attributes:
+        delta lift:
+        delta_pressure:
+        delta_pressure_coefficient:
+        pressure_coefficient:
+
+
+    """
+
+    def __init__(
+        self,
+        method: object,
+        circulations: np.ndarray,
+        alpha: Union[float, Sequence[float]],
+    ):
+        self.method = method
+        self.circulations = circulations
+        self.alpha = alpha
+
+    # @cached_property
+    # def delta_lift(self):
+    #     """Lift force change across each panel using Kutta-Jukowsi.
+    #     """
+    #     return self.circulations * self.panels.lengths
+
+    # @cached_property
+    # def delta_pressure(self):
+    #     """Pressure change across each panel using Kutta-Jukowsi."""
+    #     return (
+    #         self.density
+    #         * self.velocity
+    #         * self.circulations
+    #         / self.panels.lengths
+    #     )
+
+    @cached_property
+    def delta_pressure_coefficient(self):
+        """Pressure coefficient change across each panel."""
+        return 2 * self.circulations / self.method.panels.lengths
+
+    @cached_property
+    def pressure_coefficient(self):
+        """Pressure coefficient measured on each panel."""
+        return (
+            1
+            - (
+                self.circulations / (2 * self.velocity)
+                - self.method.panels.tangents @ self.vel_vector.T
+            )
+            ** 2
+        )
+
+    @cached_property
+    def lift_coefficient(self) -> float:
+        """Resultant lift coefficient of the current panel geometry."""
+        return np.sum(2 * self.circulations, axis=0)
+
+    def plot_delta_cp(self, alpha: Optional[float] = None):
+        fig, ax = plt.subplots()
+        alpha_array = np.array(self.alpha)
+        alpha_idx = (alpha_array == alpha) if alpha is not None else ...
+        ax.plot(
+            self.method.panels.points_at(0.5)[:, 0],
+            self.delta_pressure_coefficient[:, alpha_idx],
+            marker="o",
+            markeredgecolor="black",
+            markerfacecolor="white",
+        )
+        ax.legend(
+            loc="best",
+            # Uses alpha_idx to label each of the pressure dists. If
+            # ``alpha`` is None then the ellipsis operator will index
+            # all elements in the Numpy array of alphas
+            labels=[f"$\\alpha = {a}$" for a in alpha_array[alpha_idx]],
+        )
+        ax.set_xlabel("Normalized Location Along the Chordline [-]")
+        ax.set_ylabel("Pressure Coefficient Difference $\\Delta C_P$")
+
+    def plot_pressure_distribution(self, alpha: Optional[None]):
+        raise NotImplementedError
+
+    def plot_lift_gradient(self, label: Optional[str] = "Numerical Solution"):
+        if self.lift_coefficient.size < 2:
+            raise ValueError(
+                "A lift gradient plot can only be generated when more "
+                "than one Angle of Attack, alpha, is specified"
+            )
+        fig, ax = plt.subplots()
+        ax.plot(
+            self.alpha, self.lift_coefficient, marker="o", label=label,
+        )
+        ax.set_xlabel("Angle of Attack, $\\alpha$ [deg]")
+        ax.set_ylabel("Lift Coefficient, $C_l$ [-]")
+
+        alpha_min, alpha_max = min(self.alpha), max(self.alpha)
+        ax.plot(
+            (alpha_min, alpha_max),
+            tuple(
+                2 * math.pi * math.radians(a) for a in (alpha_min, alpha_max)
+            ),
+            label="Thin Airfoil Theory, $C_{l_\\alpha} = 2 \\pi$",
+        )
+        ax.legend(loc="best")
+        return fig, ax
 
 
 class PanelMethod(metaclass=ABCMeta):
@@ -44,11 +192,6 @@ class PanelMethod(metaclass=ABCMeta):
             solvers by increasing the density of points close to the
             leading and trailing edges. Defaults to "cosine".
     """
-
-    # Responsible for transforming the output of a panel method
-    # solution (circulation strengths) into physical quantities and
-    # flow coefficients.
-    __solution_class__ = FlowSolution
 
     def __init__(
         self,
@@ -80,6 +223,12 @@ class PanelMethod(metaclass=ABCMeta):
 
     @property
     @abstractmethod
+    def collocation_points(self) -> np.ndarray:
+        """Returns the collocation points used in the solution."""
+        ...
+
+    @property
+    @abstractmethod
     def influence_matrix(self) -> np.ndarray:
         """Returns a matrix of influence coefficients.
 
@@ -99,27 +248,29 @@ class PanelMethod(metaclass=ABCMeta):
         """."""
         ...
 
-    # TODO reduce the only input to alpha, all others are redundant
+    @property
+    def solution_class(self) -> Type[FlowSolution]:
+        """Flow solution class used to obtain physical quantities.
+
+        This can be overridden in specializations to change the behavior
+        of how physical quantities are calculated using the circulation
+        strengths obtained by the :py:class:`PanelMethod`.
+        """
+        return FlowSolution
+
     # TODO a solution should have cp, cl, delta cp THATS IT
     def solve_for(
-        self,
-        density: float,
-        velocity: float,
-        alpha: Union[float, Sequence[float]],
-        plot: bool = False,
+        self, alpha: Union[float, Sequence[float]], plot: bool = False,
     ) -> FlowSolution:
         """."""
-        # TODO add self to solution_class so it can access properties
-        return self.__solution_class__(
-            panels=self.panels,
-            circulations=self.get_circulation_strengths(velocity, alpha),
-            density=density,
-            velocity=velocity,
+        return self.solution_class(
+            method=self,
+            circulations=self.get_circulations(alpha),
             alpha=alpha,
         )
 
-    def get_circulation_strengths(
-        self, velocity: float, alpha: Union[float, Sequence[float]]
+    def get_circulations(
+        self, alpha: Union[float, Sequence[float]]
     ) -> np.ndarray:
         """Solves the linear system to obtain circulation strengths.
 
@@ -145,7 +296,6 @@ class PanelMethod(metaclass=ABCMeta):
         condition for each :py:class:`PanelMethod`.
 
         Args:
-            velocity: Free-stream flow velocity
             alpha: Angle of Attack (AoA) in SI degree. If a sequence of
                 N AoAs are specified then the solver will solve the
                 linear system, N times and return the resultant
@@ -163,36 +313,31 @@ class PanelMethod(metaclass=ABCMeta):
         """
 
         a_matrix = self.influence_matrix
-        v_vector = self.get_velocity_vector(velocity, alpha)
+        flow_dir = self.get_flow_direction(alpha)
 
         # Obtaining the Right-Hand-Side RHS by taking the dot product
-        # with the velocity vector. Resultant dimensions of the RHS
+        # with the flow direction. Resultant dimensions of the RHS
         # vector is (N_panels, 2), (2, N_alpha) -> (N_panels, N_alpha)
-        rhs = self.unit_rhs_vector @ -v_vector.T
+        rhs = self.unit_rhs_vector @ -flow_dir.T
 
         # Solution of the system has dimensions (N_panels, N_alpha)
         return np.linalg.solve(a_matrix, rhs)
 
     # TODO change to get_flow_direction
     @staticmethod
-    def get_velocity_vector(
-        velocity: float, alpha: Union[float, Sequence[float]]
-    ) -> np.ndarray:
-        """Returns velocity components U and W on the x and z axis.
+    def get_flow_direction(alpha: Union[float, Sequence[float]]) -> np.ndarray:
+        """Convert ``alpha`` into a flow direction vector.
 
         If an iterable sequence of N Angle of Attacks (AoAs) are given
         then the return statement will be a set of 2D row-vectors with
         shape (N, 2).
 
         Args:
-            velocity: Freestrean velocity in SI meter per second
             alpha: Airfoil Angle of Attack (AoA) in SI degree
         """
         # Converting alpha to radians and ensuring that it is always 1D
         alpha_rad = np.radians(alpha).flatten()
-        return velocity * np.stack(
-            (np.cos(alpha_rad), np.sin(alpha_rad)), axis=1
-        )
+        return np.stack((np.cos(alpha_rad), np.sin(alpha_rad)), axis=1)
 
     @staticmethod
     def get_sample_parameters(

@@ -12,64 +12,103 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-"""Contains Numba JIT compiled panel method functions."""
+"""Implements a First Order Constant Strength Vortex Panel Method."""
 
 import math
-from typing import Tuple, Union
+from functools import cached_property
+from typing import Dict, Sequence, Tuple, Union
 
 import numba
 import numpy as np
 
-FAST_MATH_FLAGS = {
-    # Refer to https://llvm.org/docs/LangRef.html#fast-math-flags
-    "nnan": True,
-    "ninf": True,
-    "nsz": True,
-    "arcp": True,
-    "contract": True,
-    "afn": True,
-    "reassoc": True,
-}
+from gammapy.geometry.panel import Panel2D
+from gammapy.solver.base import BASE_NUMBA_CONFIG, PanelMethod
 
-BASE_NUMBA_CONFIG = {
-    "nopython": True,
-    "cache": True,
-    "fastmath": FAST_MATH_FLAGS,
-}
+# Great source explaining it
+# https://www.youtube.com/watch?v=Ai0o5ppUTuk
+
+# Validation w/ Analytical Solution
+# https://www.youtube.com/watch?v=aAmr6YpbwaQ
+
+# Panel Coordinates Transformation
+# https://www.youtube.com/watch?v=i8nyy9_TGOY
 
 
-AFFINE_90_CW = np.array([[0, -1], [1, 0]], dtype=np.float64)
+class ConstantVortex(PanelMethod):
+    @cached_property
+    def unit_rhs_vector(self):
+        # Final entry is (0, 0) which will enforce the Kutta condition
+        normals = np.zeros((self.panels.n_panels + 1, 2), dtype=np.float64)
+        normals[:-1, :] = self.panels.normals
+        return normals
+
+    @cached_property
+    def panels(self) -> Panel2D:
+        """Returns panels that run from TE -> Bottom -> Top -> TE."""
+        sample_u = PanelMethod.get_sample_parameters(
+            num=(self.n_panels // 2) + 1, spacing=self.spacing
+        )
+        bot_pts = self.airfoil.lower_surface_at(sample_u[::-1])
+        top_pts = self.airfoil.upper_surface_at(sample_u[1:])
+        # return Panel2D(np.vstack((bot_pts, top_pts, ((1.25, 0)))))
+        return Panel2D(np.vstack((bot_pts, top_pts)))
+
+    @cached_property
+    def collocation_points(self) -> np.ndarray:
+        return self.panels.points_at(0.5)
+
+    @cached_property
+    def influence_matrices(self) -> Dict[str, np.ndarray]:
+        start_pts, end_pts = self.panels.nodes
+        im_normal, im_tangent = calc_constant_vortex_im(
+            start_pts=start_pts,
+            end_pts=end_pts,
+            col_pts=self.collocation_points,
+            panel_angles=self.panels.angles,
+            panel_normals=self.panels.normals,
+            panel_tangents=self.panels.tangents,
+        )
+        return {"normal": im_normal, "tangent": im_tangent}
+
+    @cached_property
+    def influence_matrix(self) -> np.ndarray:
+        n_panels = self.panels.n_panels
+        im_normal = self.influence_matrices["normal"]
+
+        # Setting final row to kutta condition, summation of circulation
+        # of first and last panel = 0
+        kutta_row = np.zeros((n_panels + 1), dtype=np.float64)
+        kutta_row[[0, -2]] = 1
+
+        # Creating an unknown constant error, e, to make the
+        # overconstrained N+1 system solveable (Moran pg. 282, 1984)
+        error_column = np.ones((n_panels + 1), dtype=np.float64)
+
+        # Creating an empty N+1, M+1 influence matrix and broadcasting
+        # Kutta condition row as well as the constant error column
+        solveable_im = np.zeros((n_panels + 1, n_panels + 1), dtype=np.float64)
+        solveable_im[:-1, :-1] = im_normal
+        solveable_im[:, -1] = error_column
+
+        # Broadcasting Kutta row shouldn't contain an error term
+        solveable_im[-1, :] = kutta_row
+
+        return solveable_im
+
+    def solve_for(
+        self, alpha: Union[float, Sequence[float]], plot: bool = False,
+    ) -> object:
+        """."""
+        return self.solution_class(
+            method=self,
+            # Removing constant error term in the solution
+            circulations=self.get_circulations(alpha)[:-1, :],
+            alpha=alpha,
+        )
 
 
-@numba.jit(inline="always", **BASE_NUMBA_CONFIG)
-def vortex_2d(
-    gamma: float, vortex_pt: numba.float64[:, :], col_pt: numba.float64[:, :],
-) -> numba.float64[:, :]:
-    """Calculates induced velocity due to a vortex at ``vortex_pt``.
-
-    Args:
-        gamma: Circulation strength
-        vortex_pt: Location of the vortex core
-        col_pt: Collocation point to observe the induced velocity
-
-    Returns:
-        The induced velocity 2D row-vector at the provided collocation
-        point, ``col_pt`` due to vortex of circulation, ``gamma``.
-    """
-
-    # Vector from vortex to collocation point
-    v_j = col_pt - vortex_pt
-
-    # Squared scalar distance between vortex and collocation point
-    r_j2 = v_j[..., 0] ** 2 + v_j[..., 1] ** 2
-
-    # Rotating the vortex to collocation vector 90 degrees CW to obtain
-    # the normal vector using a dot product with an Affine Transform
-    return (gamma / (2 * math.pi * (r_j2))) * (v_j @ AFFINE_90_CW)
-
-
-@numba.jit(inline="always", **BASE_NUMBA_CONFIG)
-def gcs_to_pcs(
+@numba.jit(**BASE_NUMBA_CONFIG)
+def gcs_to_pcs(  # noqa: D103
     point: numba.float64[:], reference: numba.float64[:], angle: float
 ) -> numba.float64[:]:
     """Transforms ``point`` from global to panel coordinate system.
@@ -88,8 +127,8 @@ def gcs_to_pcs(
     return np.array((x_p, y_p), dtype=np.float64)
 
 
-@numba.jit(inline="always", **BASE_NUMBA_CONFIG)
-def pcs_to_gcs(
+@numba.jit(**BASE_NUMBA_CONFIG)
+def pcs_to_gcs(  # noqa: D103
     point: Union[Tuple[float, float], numba.float64[:]], angle: float
 ) -> numba.float64[:]:
     """Transforms ``point`` from panel to global coordinate system.
@@ -107,8 +146,8 @@ def pcs_to_gcs(
     return np.array((x, y), dtype=np.float64)
 
 
-@numba.jit(inline="always", **BASE_NUMBA_CONFIG)
-def vortex_c_2d(
+@numba.jit(**BASE_NUMBA_CONFIG)
+def vortex_c_2d(  # noqa: D103
     gamma: float,
     start_pt: numba.float64[:],
     end_pt: numba.float64[:],
@@ -157,61 +196,7 @@ def vortex_c_2d(
 
 
 @numba.jit(parallel=True, **BASE_NUMBA_CONFIG)
-def calc_lumped_vortex_im(
-    vortex_pts: numba.float64[:, :],
-    col_pts: numba.float64[:, :],
-    panel_normals: numba.float64[:, :],
-) -> numba.float64[:, :]:
-    """Calculates the vortex influence coefficient matrix.
-
-    This is meant to be used with the :py:class:`LumpedVortex`
-    panel method which assumes that collocation points and
-    vortex points are located at x/c = 0.25 and 0.75 repectively.
-
-    The influence coefficient matrix represents the influence of all
-    vortices, index `j`, on all collocation points, index `i`. Initially
-    a circulation strength of Gamma = 1 is assumed to obtain the
-    geometric influence of a vortex on the current panel. Then the
-    induced velocity due to vortex `j` on collocation point `i` is
-    calculated with :py:func`vortex_2d` function. The result is then
-    projected onto the normal vector of the current panel `i`.
-
-    By projecting this induced velocity onto the panel normal vector, a
-    scalar influence coefficient is obtained, which when used with the
-    zero normal velocity boundary condition solves for the unknown
-    circulation strength of each vortex.
-
-    Args:
-        vortex_pts: Vortex points
-        col_pts: Collocation points placed along each panel.
-        panel_normals: Normal vectors of each panel.
-
-    Returns:
-        Vortex influence matrix with assumed circulation, Gamma = 1.
-    """
-    gamma = 1  # Assuming that the circulation is 1 to solve for
-    n_vorts, _ = vortex_pts.shape
-    n_cols, _ = col_pts.shape
-
-    influence_matrix = np.zeros((n_cols, n_vorts), dtype=np.float64)
-
-    for i in numba.prange(n_cols):
-        n_i = panel_normals[i]
-        col_pt = col_pts[i]
-        for j in range(n_vorts):
-            # Calculating induced velocity at collocation point i due to
-            # vortex j, and taking the dot-product to get the a_ij
-            # v_ij = vortex_2d(gamma, vortex_pts[j], col_pt)
-            # a_ij = (v_ij[0] * n_i[0]) + (v_ij[1] * n_i[1])
-            influence_matrix[i, j] = (
-                vortex_2d(gamma, vortex_pts[j], col_pt) @ n_i
-            )
-
-    return influence_matrix
-
-
-@numba.jit(parallel=True, **BASE_NUMBA_CONFIG)
-def calc_constant_vortex_im(
+def calc_constant_vortex_im(  # noqa: D103
     start_pts: numba.float64[:, :],
     end_pts: numba.float64[:, :],
     col_pts: numba.float64[:, :],
@@ -258,7 +243,10 @@ def calc_constant_vortex_im(
         Therefore, index 0 and 1 of the returned matrix correspond to
         the normal and tangent coefficient matrix respectively.
     """
-    gamma = 1  # Assuming that the circulation is 1 to solve for
+    # Circulation is inverted due to sign convention change from Katz &
+    # Plotkin who solved the problem on the XZ axis where a clockwise
+    # rotation is positive
+    gamma = -1
     n_vorts, _ = start_pts.shape
     n_cols, _ = col_pts.shape
 
@@ -272,7 +260,7 @@ def calc_constant_vortex_im(
             # Calculating induced velocity at collocation point i due to
             # vortex j, and taking the dot-product to get the a_ij
             if i == j:
-                influence_matrix[..., i, j] = 0.5
+                influence_matrix[..., i, j] = -0.5
             else:
                 v_induced = vortex_c_2d(
                     gamma,

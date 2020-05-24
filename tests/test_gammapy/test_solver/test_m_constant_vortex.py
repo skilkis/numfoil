@@ -18,36 +18,12 @@ import numpy as np
 import pytest
 from scipy import integrate
 
-from gammapy.solver.jit_funcs import (
-    calc_lumped_vortex_im,
+from gammapy.solver.m_constant_vortex import (
     gcs_to_pcs,
     pcs_to_gcs,
-    vortex_2d,
     vortex_c_2d,
 )
-
-VORTEX_2D_TEST_CASES = {
-    "argnames": "gamma, vortex_pt, col_pt, expected_result",
-    "argvalues": [
-        (
-            2,
-            np.array([[0, 0]], dtype=np.float64),
-            np.array([[1, 0]], dtype=np.float64),
-            np.array([[0, -1 / math.pi]]),
-        )
-    ],
-}
-
-
-@pytest.mark.parametrize(**VORTEX_2D_TEST_CASES)
-def test_vortex_2d(gamma, vortex_pt, col_pt, expected_result):
-    """Tests if the correct induced velocity is returned."""
-    result = vortex_2d(gamma, vortex_pt, col_pt)
-    jit_result = vortex_2d.py_func(gamma, vortex_pt, col_pt)
-
-    assert np.allclose(result, expected_result)
-    assert np.allclose(jit_result, expected_result)
-
+from gammapy.solver.m_lumped_vortex import vortex_2d
 
 GCS_TO_PCS_TEST_CASES = {
     "argnames": "point, reference_point, angle, expected_result",
@@ -171,14 +147,14 @@ VORTEX_C_2D_TEST_CASES = {
             math.radians(-135),
             (0.1767767, 0.1767767),
         ),
-        # Testing sign convention of the singularity -135 degrees *//
+        # Testing sign convention of the singularity at 135 degrees *//
         (
             1,
-            np.array([0, 0], dtype=np.float64),
             np.array([1, 0], dtype=np.float64),
-            np.array([1.5, 0], dtype=np.float64),
-            math.radians(0),
-            (0.1767767, 0.1767767),
+            np.array([0, 1], dtype=np.float64),
+            np.array([0.5, 0.5], dtype=np.float64),
+            math.radians(135),
+            (-0.35355339, 0.35355339),
         ),
     ],
 }
@@ -210,39 +186,3 @@ def integrated_vortex_c_2d(start_pt, end_pt, col_pt):
         return vortex_2d(1, vortex_pt, col_pt)
 
     return integrate.quad_vec(integrand, 0, panel_length, epsabs=1e-9)[0]
-
-
-offset_matrix = np.stack((np.arange(5) * 0.2, np.zeros(5)), axis=1)
-CALC_LUMPED_VORTEX_IM_TEST_CASES = {
-    "argnames": "vortex_pts, col_pts, panel_normals, expected_result",
-    "argvalues": [
-        (
-            np.array([[0.2 * 0.25, 0]]) + offset_matrix,
-            np.array([[0.2 * 0.75, 0]]) + offset_matrix,
-            np.repeat(np.array([[0, 1]], dtype=np.float64), 5, axis=0),
-            5
-            / math.pi
-            * np.array(
-                [
-                    [-1, 1, 1 / 3, 1 / 5, 1 / 7],
-                    [-1 / 3, -1, 1, 1 / 3, 1 / 5],
-                    [-1 / 5, -1 / 3, -1, 1, 1 / 3],
-                    [-1 / 7, -1 / 5, -1 / 3, -1, 1],
-                    [-1 / 9, -1 / 7, -1 / 5, -1 / 3, -1],
-                ]
-            ),
-        )
-    ],
-}
-
-
-@pytest.mark.parametrize(**CALC_LUMPED_VORTEX_IM_TEST_CASES)
-def test_calc_lumpedvortex_im(
-    vortex_pts, col_pts, panel_normals, expected_result
-):
-    """Tests if the lumped vortex influence matrix is correct."""
-    jit_result = calc_lumped_vortex_im(vortex_pts, col_pts, panel_normals)
-    result = calc_lumped_vortex_im.py_func(vortex_pts, col_pts, panel_normals)
-
-    assert np.allclose(jit_result, expected_result)
-    assert np.allclose(result, expected_result)

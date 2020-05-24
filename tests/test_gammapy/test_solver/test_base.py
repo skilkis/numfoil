@@ -17,7 +17,7 @@ import math
 import numpy as np
 import pytest
 
-from gammapy.solver.method import PanelMethod
+from gammapy.solver.base import PanelMethod
 
 
 class TestPanelMethod:
@@ -58,29 +58,28 @@ class TestPanelMethod:
         with pytest.raises(AttributeError):
             setattr(obj, attribute, None)
 
-    GET_VELOCITY_VECTORS_TEST_CASES = {
-        "argnames": "velocity, alpha, expected_result",
+    GET_FLOW_DIRECTION_TEST_CASES = {
+        "argnames": "alpha, expected_result",
         "argvalues": [
-            (20, 0, np.array([[20, 0]])),
-            (20, 45, np.array([[math.sqrt(200), math.sqrt(200)]])),
-            (20, -90, np.array([[0, -20]])),
+            (0, np.array([[1, 0]])),
+            (45, np.array([[1 / math.sqrt(2), 1 / math.sqrt(2)]])),
+            (-90, np.array([[0, -1]])),
             # Testing if alpha can be a sequence of floats
             (
-                20,
                 [0, -45, 135],
                 np.array(
                     [
-                        [20, 0],
-                        [math.sqrt(200), -math.sqrt(200)],
-                        [-math.sqrt(200), math.sqrt(200)],
+                        [1, 0],
+                        [1 / math.sqrt(2), -1 / math.sqrt(2)],
+                        [-1 / math.sqrt(2), 1 / math.sqrt(2)],
                     ]
                 ),
             ),
         ],
     }
 
-    @pytest.mark.parametrize(**GET_VELOCITY_VECTORS_TEST_CASES)
-    def test_get_velocity_vectors(self, velocity, alpha, expected_result):
+    @pytest.mark.parametrize(**GET_FLOW_DIRECTION_TEST_CASES)
+    def test_get_flow_direction(self, alpha, expected_result):
         """Tests conversion of angles to velocity vectors."""
-        result = PanelMethod.get_velocity_vector(velocity, alpha)
+        result = PanelMethod.get_flow_direction(alpha)
         assert np.allclose(result, expected_result)
