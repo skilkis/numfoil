@@ -90,5 +90,5 @@ class Vector2D(Point2D):
         """Returns the nit-vector(s) of :py:class:`Vector2D`."""
         return normalize_2d(self)
 
-    # Subtracting entities with
+    # Subtracting vectors should not inherit Point2D behavior
     __sub__ = Geom2D.__sub__
