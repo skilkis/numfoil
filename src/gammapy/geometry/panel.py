@@ -25,7 +25,22 @@ from .vector2d import rotate_2d_90ccw
 
 
 class Panel2D(Geom2D):
-    """Creates n-1 panels from a set of n points.
+    """Creates n panels from a set of n+1 :py:class:`Point2D` arrays.
+
+    The :py:class:`Panel2D` can either be indexed using Numpy syntax
+    in which case the underlying py:class:`Point2D` arrays will be
+    returned::
+
+        >>> panels = Panel2D([(0, 0), (1, 0), (2, 0)])
+        >>> panels[:, :]
+        Point2D([[0, 0], [1, 0], [2, 0]])
+
+    Alternatively, if an integer index is used then the ith panel
+    will be returned::
+
+        >>> panels = Panel2D([(0, 0), (1, 0), (2, 0)])
+        >>> panels[1]
+        Panel2D([[1, 0], (2, 0)])
 
     Note:
         A :py:class:`Panel2D` instantiation behaves exactly the same as
@@ -61,8 +76,14 @@ class Panel2D(Geom2D):
 
     @property
     def nodes(self) -> Tuple[Point2D, Point2D]:
-        """Returns a view on the start and end nodes of all panels."""
-        return self[:-1].view(Point2D), self[1:].view(Point2D)
+        """Returns the start and end nodes of all panels.
+
+        Note:
+            Due to :py:meth:`__getitem__` being overriden, the
+            underlying :py:class:`Point2D` nodes can be accessed
+            directly when using a slice.
+        """
+        return self[:-1], self[1:]
 
     @property
     def tangents(self) -> Vector2D:
@@ -145,3 +166,26 @@ class Panel2D(Geom2D):
         plt.show() if show else ()  # Rendering plot window if show is true
 
         return fig, ax
+
+    def __getitem__(self, item) -> np.ndarray:
+        """Returns either the n-th panel or :py:class:`Point2D` objects.
+
+        If ``item`` is an integer then the n-th :py:class:`Panel2D`
+        (edge) object will be returned. Otherwise, the underlying
+        :py:class:`Point2D` nodes are returned.
+
+        This also supports iterating over panels as follows::
+
+            for panel in Panel2D([(0, 0), (1, 0), (2, 0)]):
+                pass  # 2 iterations will commence
+        """
+        if isinstance(item, int):
+            n = item
+            if -self.n_panels <= n < self.n_panels:
+                start = n if n >= 0 else (self.n_panels) + n
+                end = start + 2
+                return super().__getitem__(slice(start, end, 1))
+            else:
+                raise IndexError
+        else:
+            return super().__getitem__(item).view(Point2D)

@@ -186,3 +186,48 @@ class TestPanel2D(ScenarioTestSuite):
         # Making sure that the axis is equal which is important
         # for the direction of the Quiver arrows to rendered correctly
         assert ax._aspect == "equal"
+
+    EXPECTED_ITEMS = {
+        "plate": {
+            "start": Panel2D([(0, 0), (1, 0)]),
+            "end": Panel2D([(0, 0), (1, 0)]),
+        },
+        "trapezoid": {
+            "start": Panel2D([(0, 0), (1, 1)]),
+            "end": Panel2D([(2, 1), (3, 0)]),
+        },
+        "bucket": {
+            "start": Panel2D([(3, 0), (2, 0)]),
+            "end": Panel2D([(1, 0), (-1, 0)]),
+        },
+    }
+
+    def test__getitem__(self, scenario):
+        """Tests if the overridden indexing behavior is correct."""
+
+        # Testing that the start panel is retrieved correctly
+        start_panel = scenario.obj[0]
+        assert np.allclose(
+            start_panel, self.EXPECTED_ITEMS[scenario.label]["start"]
+        )
+
+        # Testing that the end panel is retrieved correctly
+        end_panel = scenario.obj[-1]
+        assert np.allclose(
+            end_panel, self.EXPECTED_ITEMS[scenario.label]["end"]
+        )
+
+        # Testing forward iteration
+        for i, panel in enumerate(scenario.obj):
+            assert isinstance(panel, Panel2D)
+        assert i == scenario.obj.n_panels - 1
+
+        # Testing backward iteration
+        for i, panel in enumerate(reversed(scenario.obj)):
+            assert isinstance(panel, Panel2D)
+        assert i == scenario.obj.n_panels - 1
+
+        # Testing regular Numpy slicing to access underlying nodes
+        nodes = scenario.obj[:]
+        assert isinstance(nodes, Point2D)
+        assert len(nodes) == scenario.obj.n_panels + 1
