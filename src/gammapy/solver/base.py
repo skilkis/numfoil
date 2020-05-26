@@ -103,12 +103,12 @@ class FlowSolution:
     #     )
 
     @cached_property
-    def delta_pressure_coefficient(self):
+    def delta_pressure_coefficients(self):
         """Pressure coefficient change across each panel."""
         return 2 * self.circulations / self.method.panels.lengths
 
     @cached_property
-    def pressure_coefficient(self):
+    def pressure_coefficients(self):
         """Pressure coefficient measured on each panel."""
         return (
             1
@@ -130,7 +130,7 @@ class FlowSolution:
         alpha_idx = (alpha_array == alpha) if alpha is not None else ...
         ax.plot(
             self.method.panels.points_at(0.5)[:, 0],
-            self.delta_pressure_coefficient[:, alpha_idx],
+            self.delta_pressure_coefficients[:, alpha_idx],
             marker="o",
             markeredgecolor="black",
             markerfacecolor="white",
@@ -145,8 +145,34 @@ class FlowSolution:
         ax.set_xlabel("Normalized Location Along the Chordline [-]")
         ax.set_ylabel("Pressure Coefficient Difference $\\Delta C_P$")
 
-    def plot_pressure_distribution(self, alpha: Optional[None]):
-        raise NotImplementedError
+    def plot_pressure_distribution(self, alpha: Optional[float] = None):
+        fig, ax = plt.subplots()
+        cp = self.pressure_coefficients
+        stag_idx = np.argwhere(cp == np.max(cp))[0, 0]
+        ax.plot(
+            self.method.collocation_points.x[: stag_idx + 1],
+            cp[: stag_idx + 1],
+            label="$\\Gamma\\mathrm{Py}$ Lower Surface",
+        )
+        ax.plot(
+            self.method.collocation_points.x[stag_idx:],
+            cp[stag_idx:],
+            label="$\\Gamma\\mathrm{Py}$ Upper Surface",
+        )
+        ax.scatter(
+            self.method.collocation_points.x[stag_idx],
+            cp[stag_idx],
+            marker="o",
+            label="Stagnation Point",
+            zorder=3,
+            color="black",
+            facecolor="white",
+        )
+        ax.invert_yaxis()
+        ax.set_xlabel("Normalized Location $\\frac{x}{c}$")
+        ax.set_ylabel("Pressure Coefficient $C_p$")
+        ax.legend(loc="best")
+        return fig, ax
 
     def plot_lift_gradient(self, label: Optional[str] = "Numerical Solution"):
         if self.lift_coefficient.size < 2:
@@ -171,6 +197,34 @@ class FlowSolution:
         )
         ax.legend(loc="best")
         return fig, ax
+
+
+class ThickFlowSolution(FlowSolution):
+    # TODO find a way to handle differing size due to the Kutta condition
+    @cached_property
+    def normalized_induced_velocities(self):
+        return (
+            self.method.influence_matrices["tangent"][:-1, :-1]
+            @ self.circulations
+        )
+
+    @cached_property
+    def tangential_freestream_velocities(self):
+        return (
+            self.method.panels.tangents
+            @ self.method.get_flow_direction(self.alpha).T
+        )
+
+    @cached_property
+    def pressure_coefficients(self):
+        return (
+            1
+            - (
+                self.normalized_induced_velocities
+                + self.tangential_freestream_velocities
+            )
+            ** 2
+        )
 
 
 class PanelMethod(metaclass=ABCMeta):
