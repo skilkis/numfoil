@@ -22,11 +22,19 @@ import numba
 import numpy as np
 
 from gammapy.geometry.panel import Panel2D
-from gammapy.solver.base import BASE_NUMBA_CONFIG, FlowSolution, PanelMethod
+from gammapy.solver.base import (
+    BASE_NUMBA_CONFIG,
+    PanelMethod,
+    ThickFlowSolution,
+)
 
 
 class LinearVortex(PanelMethod):
     """Implements a Linear Strength Vortex panel method."""
+
+    @property
+    def solution_class(self):
+        return ThickFlowSolution
 
     @cached_property
     def unit_rhs_vector(self) -> np.ndarray:
@@ -71,7 +79,7 @@ class LinearVortex(PanelMethod):
 
     def solve_for(
         self, alpha: Union[float, Sequence[float]], plot: bool = False,
-    ) -> FlowSolution:
+    ) -> ThickFlowSolution:
         """Returns a :py:class:`FlowSolution` with lazy attributes.
 
         Args:
