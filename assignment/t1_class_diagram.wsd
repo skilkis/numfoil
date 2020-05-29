@@ -1,0 +1,167 @@
+@startuml class_diagram
+page 1x2
+skinparam shadowing false
+skinparam monochrome true
+' skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+
+class abc.ABCMeta << (M,#FF7700) metaclass >> {
+    + register(): None
+    + __subclasshook__(): bool or NotImplemented
+}
+
+abc -[hidden]- geometry
+package "Γpy" as gammapy #DDDDDD {
+
+
+    package geometry #CFCFCF {
+        numpy.ndarray <|-- Geom2D
+        Geom2D <|-- Point2D
+        Point2D <|-- Vector2D
+        abc.ABCMeta <|-- Airfoil
+        Airfoil <|-- NACA4Airfoil
+        NACA4Airfoil <|-- ParabolicCamberAirfoil
+        Point2D -- Airfoil
+        Geom2D <|-- Panel2D
+
+        class Geom2D {
+            + __new__(array): Geom2D
+        }
+
+        Vector2D -- Point2D
+        class Point2D {
+            + x: np.ndarray
+            + y: np.ndarray
+            + __sub__(other): Vector2D or np.ndarray
+        }
+
+        class Vector2D {
+            + magnitude: np.ndarray
+            + normalized: np.ndarray
+        }
+
+        Vector2D -- Panel2D
+        Point2D -- Panel2D
+        class Panel2D {
+            # n_panels: int
+            # nodes: tuple(Point2D, Point2D)
+            # tangents: Vector2D
+            # normals: Vector2D
+            # angles: np.ndarray
+            # lengths: np.ndarray
+            + points_at(u): Point2D
+            + plot(show): tuple
+            + __new__(array): Panel2D
+            + __getitem__(item): Point2D or np.ndarray
+
+        }
+
+        class Airfoil {
+            {abstract} cambered: bool
+            {abstract} camberline_at(x): Point2D
+            {abstract} upper_surface_at(x): Point2D
+            {abstract} lower_surface_at(x): Point2D
+            {abstract} ensure_1d_vector(x): Point2D
+        }
+
+        class NACA4Airfoil {
+            + max_camber: float
+            + camber_location: float
+            + max_thickness: float
+            + te_closed: bool = True
+            + cambered: bool
+            + name: str
+            + camberline_at(x): Point2D
+            + camber_tangent_at(x): Point2D
+            + camber_normal_at(x): Point2D
+            + upper_surface_at(x): Point2D
+            + lower_surface_at(x): Point2D
+            + offset_vectors_at(x): Point2D
+            + half_thickness_at(x): Point2D
+            + plot(n_points, show): tuple
+            + {static} parse_naca_code(naca_code): map
+        }
+
+        class ParabolicCamberAirfoil {
+            + eta: float
+            + name: str
+            + camberline_at(x): Point2D
+        }
+    }
+
+    geometry -- solver
+    package solver #CFCFCF {
+
+        abc.ABCMeta <|-- FlowSolution
+        class FlowSolution {
+            + method: PanelMethod
+            + circulations: np.ndarray
+            + alpha: float or Sequence[float]
+            + {abstract} delta_pressure_coefficients: np.ndarray
+            + {abstract} pressure_coefficients: np.ndarray
+            + {abstract} lift_coefficient: float or np.ndarray
+            + enumerate_alpha(alpha): generator
+            + {static} ensure_iterable(obj) -> Iterable
+            + plot_delta_cp(alpha): tuple
+            + plot_pressure_distribution(alpha): tuple
+            + plot_lift_gradient(label): tuple
+        }
+
+        FlowSolution <|-- ThinFlowSolution
+        class ThinFlowSolution {
+            + delta_pressure_coefficients: np.ndarray
+            + pressure_coefficients: np.ndarray
+            + lift_coefficient: float or np.ndarray
+        }
+
+        FlowSolution <|-- ThickFlowSolution
+        class ThickFlowSolution {
+            + flow_direction: Vector2D
+            + tangential_induced_velocity: Vector2D
+            + tangential_freestream_velocities: Vector2D
+            + pressure_coefficients: np.ndarray
+            + lift_coefficient: np.ndarray
+        }
+
+        abc.ABCMeta <|-- PanelMethod
+        FlowSolution -- PanelMethod
+        Airfoil -- PanelMethod
+        class PanelMethod {
+            # airfoil: Airfoil
+            # n_panels: int
+            # spacing: str = "cosine"
+            # {abstract} panels: Panel2D
+            # {abstract} collocation_points: Point2D
+            # {abstract} influence_matrix: np.ndarray
+            # {abstract} unit_rhs_vector: Vector2D
+            # solution_class: FlowSolution
+            # __setattr__(name, value): None
+            + solve_for(alpha, plot): FlowSolution
+            + get_circulations(alpha): np.ndarray
+            + {static} get_flow_direction(alpha): Vector2D
+            + {static} get_sample_parameters(num, spacing): np.ndarray
+        }
+
+        ThinFlowSolution -- LumpedVortex
+        class LumpedVortex {
+            # panels: Panel2D
+            # collocation_points: Point2D
+            # unit_rhs_vector: np.ndarray
+            # influence_matrix: np.ndarray
+            # solution_class: ThinFlowSolution
+        }
+
+        ThickFlowSolution -- LinearVortex
+        class LinearVortex {
+            # panels: Panel2D
+            # collocation_points: Point2D
+            # unit_rhs_vector: np.ndarray
+            # influence_matrices: dict
+            # influence_matrix: np.ndarray
+            + solve_for(alpha, plot): ThickFlowSolution
+            # solution_class: ThickFlowSolution
+        }
+    }
+
+@enduml
