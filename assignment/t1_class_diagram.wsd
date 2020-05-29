@@ -11,7 +11,6 @@ class abc.ABCMeta << (M,#FF7700) metaclass >> {
     + __subclasshook__(): bool or NotImplemented
 }
 
-abc -[hidden]- geometry
 package "Γpy" as gammapy #DDDDDD {
 
 
@@ -90,10 +89,10 @@ package "Γpy" as gammapy #DDDDDD {
         }
     }
 
-    geometry -- solver
     package solver #CFCFCF {
 
         abc.ABCMeta <|-- FlowSolution
+        abc.ABCMeta -[hidden]- FlowSolution
         class FlowSolution {
             + method: PanelMethod
             + circulations: np.ndarray
@@ -126,7 +125,6 @@ package "Γpy" as gammapy #DDDDDD {
 
         abc.ABCMeta <|-- PanelMethod
         FlowSolution -- PanelMethod
-        Airfoil -- PanelMethod
         class PanelMethod {
             # airfoil: Airfoil
             # n_panels: int
@@ -154,7 +152,7 @@ package "Γpy" as gammapy #DDDDDD {
         }
 
         ThickFlowSolution -- LinearVortex
-        PanelMethod <|-- LumpedVortex
+        PanelMethod <|-- LinearVortex
         class LinearVortex {
             # panels: Panel2D
             # collocation_points: Point2D
