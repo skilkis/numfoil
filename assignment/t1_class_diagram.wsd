@@ -144,6 +144,7 @@ package "Γpy" as gammapy #DDDDDD {
         }
 
         ThinFlowSolution -- LumpedVortex
+        PanelMethod <|-- LumpedVortex
         class LumpedVortex {
             # panels: Panel2D
             # collocation_points: Point2D
@@ -153,6 +154,7 @@ package "Γpy" as gammapy #DDDDDD {
         }
 
         ThickFlowSolution -- LinearVortex
+        PanelMethod <|-- LumpedVortex
         class LinearVortex {
             # panels: Panel2D
             # collocation_points: Point2D
