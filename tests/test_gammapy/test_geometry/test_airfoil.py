@@ -13,12 +13,21 @@
 # permissions and limitations under the License.
 
 import os
+from functools import cached_property
+from pathlib import Path
+from typing import Dict
 
 import numpy as np
 import pytest
 
-from gammapy.geometry import Airfoil, NACA4Airfoil
-from tests.test_gammapy.helpers import calc_curve_error, get_naca_airfoils
+from gammapy.geometry import Airfoil, NACA4Airfoil, UIUCAirfoil
+from tests.test_gammapy.helpers import (
+    ScenarioTestSuite,
+    calc_curve_error,
+    get_naca_airfoils,
+)
+
+AIRFOIL_DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 
 class TestAirfoil:
@@ -28,6 +37,7 @@ class TestAirfoil:
     def test_abc(self):
         """Tests if the ABC module works as expected."""
 
+        # TODO update abstractmethods to actually reflect the Airfoil class
         # Getting abstract methods from current `test_class`
         abstractmethods = ["camber_at", "surfaces_at"]
 
@@ -305,12 +315,10 @@ class TestNACA4Airfoil:
             required_texts = ("Upper Surface", "Lower Surface")
         assert all(t in legend_texts for t in required_texts)
 
-    airfoil_data_dir = os.path.join(os.path.dirname(__file__), "data")
-
-    @pytest.mark.parametrize("filename", get_naca_airfoils(airfoil_data_dir))
+    @pytest.mark.parametrize("filename", get_naca_airfoils(AIRFOIL_DATA_DIR))
     def test_airfoil_accuracy(self, filename):
         """Tests accuracy of surfaces with UIUC NACA 4 series files."""
-        fname = os.path.join(self.airfoil_data_dir, filename)
+        fname = os.path.join(AIRFOIL_DATA_DIR, filename)
         naca_code = os.path.splitext(filename)[0]
         expected_pts = np.loadtxt(fname, comments="NACA")
         le_idx = np.argwhere(expected_pts == np.array([0, 0]))[0, 0]
@@ -326,3 +334,57 @@ class TestNACA4Airfoil:
         else:
             # If the airfoil is symmetric points are compared directly
             np.allclose(result_pts, expected_pts)
+
+
+class FileAirfoilTester(ScenarioTestSuite):
+
+    test_class = None
+    atol = 1e-4  # Absolute tolerance used for numerical error based tests
+
+    def test_points(self, scenario):
+        """Tests if airfoil points can be correctly parsed."""
+        obj, _ = scenario
+        points = obj.points
+        _, n_dims = points.shape
+
+        # Checking that row-vectors were parsed in
+        assert n_dims == 2
+
+        # Checking that start and end coordinates are at x=1
+        assert np.allclose(points[(0, -1), 0], 1, atol=self.atol)
+
+        # Checking that the leading edge is located at x=0
+        assert np.allclose(np.min(points, axis=0)[0], 0, atol=self.atol)
+
+    def test_le_idx(self, scenario):
+        """Ensures that the leading-edge index corresponds to x=0."""
+        obj, _ = scenario
+        assert obj.points[obj.le_idx][0] == 0
+
+
+class TestUIUCAirfoil(FileAirfoilTester):
+
+    test_class = UIUCAirfoil
+    airfoil_data_dir = AIRFOIL_DATA_DIR
+
+    @cached_property
+    def SCENARIOS(self) -> Dict[str, Airfoil]:
+        """Creates scenarioes using NACA 4 series files."""
+        return {
+            a: self.test_class(Path(self.airfoil_data_dir) / a)
+            for a in get_naca_airfoils(self.airfoil_data_dir)
+        }
+
+    EXPECTED_CAMBERED = {
+        "naca0008": False,
+        "naca0018": False,
+        "naca1410": True,
+        "naca2412": True,
+        "naca4412": True,
+    }
+
+    def test_cambered(self, scenario):
+        """Tests if camber is correctly identified."""
+        obj, label = scenario
+        airfoil_name = Path(label).stem
+        assert obj.cambered == NACA4Airfoil(airfoil_name).cambered

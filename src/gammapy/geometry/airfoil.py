@@ -16,12 +16,14 @@
 
 import re
 from abc import ABCMeta, abstractmethod
+from functools import cached_property
 from typing import Tuple, Union
 
 import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
 
+from .spline import BSpline2D
 from .vector2d import normalize_2d, rotate_2d_90ccw
 
 # TODO Add NACA5 series Airfoil as a fun nice-to-have feature
@@ -91,6 +93,43 @@ class Airfoil(metaclass=ABCMeta):
         if len(x.shape) != 1:
             raise ValueError("Only 1-D np.arrays are supported")
         return x
+
+    def plot(
+        self, n_points: int = 100, show: bool = True
+    ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+        """Plots the airfoil with ``n_points`` per curve.
+
+        Args:
+            n_points: Number of points used per airfoil curve
+            show: Determines if the plot window should be launched
+
+        Returns:
+            Matplotlib plot objects:
+
+                [0]: Matplotlib Figure instance
+                [1]: Matplotlib Axes instance
+        """
+
+        # Setting up cosine sampled chord-values
+        x = 0.5 * (1 - np.cos(np.linspace(0, np.pi, num=n_points)))
+
+        # Retrieving pts on all curves
+        pts_lower = self.lower_surface_at(x)
+        pts_upper = self.upper_surface_at(x)
+
+        fig, ax = plt.subplots()
+        ax.plot(pts_upper[:, 0], pts_upper[:, 1], label="Upper Surface")
+        ax.plot(pts_lower[:, 0], pts_lower[:, 1], label="Lower Surface")
+        if self.cambered:
+            pts_camber = self.camberline_at(x)
+            ax.plot(pts_camber[:, 0], pts_camber[:, 1], label="Camber Line")
+        ax.legend(loc="best")
+        ax.set_xlabel("Normalized Location Along Chordline (x/c)")
+        ax.set_ylabel("Normalized Thickness (t/c)")
+        plt.axis("equal")
+        plt.show() if show else ()  # Rendering plot window if show is true
+
+        return fig, ax
 
 
 class NACA4Airfoil(Airfoil):
@@ -215,46 +254,17 @@ class NACA4Airfoil(Airfoil):
             - (0.1036 if self.te_closed else 0.1015) * (x ** 4)
         )
 
-    def plot(
-        self, n_points: int = 100, show: bool = True
-    ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
-        """Plots the airfoil with ``n_points`` per curve.
-
-        Args:
-            n_points: Number of points used per airfoil curve
-            show: Determines if the plot window should be launched
-
-        Returns:
-            Matplotlib plot objects:
-
-                [0]: Matplotlib Figure instance
-                [1]: Matplotlib Axes instance
-        """
-
-        # Setting up cosine sampled chord-values
-        x = 0.5 * (1 - np.cos(np.linspace(0, np.pi, num=n_points)))
-
-        # Retrieving pts on all curves
-        pts_lower = self.lower_surface_at(x)
-        pts_upper = self.upper_surface_at(x)
-
-        fig, ax = plt.subplots()
-        ax.plot(pts_upper[:, 0], pts_upper[:, 1], label="Upper Surface")
-        ax.plot(pts_lower[:, 0], pts_lower[:, 1], label="Lower Surface")
-        if self.cambered:
-            pts_camber = self.camberline_at(x)
-            ax.plot(pts_camber[:, 0], pts_camber[:, 1], label="Camber Line")
-        ax.legend(loc="best")
-        ax.set_xlabel("Normalized Location Along Chordline (x/c)")
-        ax.set_ylabel("Normalized Thickness (t/c)")
+    def plot(self, *args, show: bool = True, **kwargs):
+        """Specializes the :py:class:`Airfoil` plot with a title."""
+        # Turning off plot display to be able to display after the
+        # title is added to the plot
+        fig, ax = super().plot(*args, **kwargs, show=False)
         ax.set_title(
             "{name} {te_shape} Trailing-Edge Airfoil".format(
                 name=self.name, te_shape="Closed" if self.te_closed else "Open"
             )
         )
-        plt.axis("equal")
         plt.show() if show else ()  # Rendering plot window if show is true
-
         return fig, ax
 
     @property
@@ -293,8 +303,118 @@ class NACA4Airfoil(Airfoil):
             raise ValueError("NACA code must contain 4 numbers")
 
 
-class ParabolicCamberAirfoil(NACA4Airfoil):
+class FileAirfoil(Airfoil):
+    """Base class definition of an airfoil read from a file.
 
+    Note:
+        Airfoils coordinates are ordered such that the first point is
+        the trailing edge, and the points go from the upper surface
+        to the lower surface and back to the trailing edge (Counter
+        Clockwse).
+
+    Args:
+        filepath: Absolute filepath to the airfoil file including
+            file extension.
+    """
+
+    def __init__(self, filepath: str):
+        self.filepath = filepath
+
+    @abstractmethod
+    def parse_file(self) -> np.ndarray:
+        """Reads :py:attr:`self.filename` and returns a points array."""
+
+    @cached_property
+    def points(self) -> np.ndarray:
+        """Returns airfoil ordinate points x, y as row-vectors."""
+        return self.parse_file()
+
+    @cached_property
+    def le_idx(self) -> np.ndarray:
+        """Returns the leading edge index within :py:attr:`points`."""
+        return np.argwhere(self.points == np.min(self.points, axis=0))[0, 0]
+
+    @cached_property
+    def upper_surface(self) -> BSpline2D:
+        """Returns a spline of the upper airfoil surface."""
+        return BSpline2D(self.points[self.le_idx :: -1])
+
+    @cached_property
+    def lower_surface(self) -> BSpline2D:
+        """Returns a spline of the lower airfoil surface."""
+        return BSpline2D(self.points[self.le_idx :])
+
+    # TODO consider using geom2d views here
+    @cached_property
+    def mean_camber_line(self) -> BSpline2D:
+        """Returns a spline of the mean-camber line.
+
+        Note:
+            The mean camber line is defined as the average distance
+            between the top and bottom surfaces when measured normal
+            to the chord-line.
+        """
+        u = np.linspace(0, 1, num=100)
+
+        upper_pts = self.upper_surface.evaluate_at(u)
+        lower_pts = self.lower_surface.evaluate_at(u)
+
+        return BSpline2D(0.5 * (upper_pts - lower_pts) + lower_pts)
+
+    @property
+    def cambered(self) -> bool:
+        """Returns if the current :py:class:`Airfoil` is cambered.
+
+        The algorithm works by flipping the lower surface points and
+        checking if the distance between the top and bottom points are
+        within a set tolerance.
+        """
+        u = np.linspace(0, 1, num=10)
+
+        upper_pts = self.upper_surface.evaluate_at(u)
+        lower_pts = self.lower_surface.evaluate_at(u)
+        lower_pts[:, 1] *= -1  # Flipping the lower surface across the chord
+
+        return not np.allclose(upper_pts, lower_pts, atol=1e-6)
+
+    def camberline_at(self, x: Union[float, np.ndarray]) -> np.ndarray:
+        """Returns camber-line points at the supplied ``x``.
+
+        Args:
+            x: Chord-line fraction (0 = LE, 1 = TE)
+        """
+        return self.mean_camber_line.evaluate_at(u=x)
+
+    def upper_surface_at(
+        self, x: Union[float, np.ndarray]
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Returns upper airfoil ordinates at the supplied ``x``.
+
+        Args:
+            x: Chord-line fraction (0 = LE, 1 = TE)
+        """
+        return self.upper_surface.evaluate_at(u=x)
+
+    def lower_surface_at(
+        self, x: Union[float, np.ndarray]
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Returns lower airfoil ordinates at the supplied ``x``.
+
+        Args:
+            x: Chord-line fraction (0 = LE, 1 = TE)
+        """
+        return self.lower_surface.evaluate_at(u=x)
+
+
+class UIUCAirfoil(FileAirfoil):
+    """Creates :py:class:`Airfoil` from a UIUC airfoil file."""
+
+    def parse_file(self) -> np.ndarray:
+        """UIUC files are ordered correctly and have 1 header line."""
+        return np.genfromtxt(self.filepath, skip_header=1)
+
+
+class ParabolicCamberAirfoil(NACA4Airfoil):
     def __init__(self, eta: float = 0.1):
         self.eta = eta
 
@@ -305,7 +425,7 @@ class ParabolicCamberAirfoil(NACA4Airfoil):
         pts_c = np.zeros((x.size, 2))
         pts_c[:, 0] = x
 
-        pts_c[..., 1] = 4 * self.eta * (x - x**2)
+        pts_c[..., 1] = 4 * self.eta * (x - x ** 2)
         return pts_c
 
     @property
