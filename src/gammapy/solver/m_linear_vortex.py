@@ -32,18 +32,6 @@ from gammapy.solver.base import (
 class LinearVortex(PanelMethod):
     """Implements a Linear Strength Vortex panel method."""
 
-    @property
-    def solution_class(self):
-        return ThickFlowSolution
-
-    @cached_property
-    def unit_rhs_vector(self) -> np.ndarray:
-        """Normalized right-hand-side consisting of panel normals."""
-        # Final entry is (0, 0) which will enforce the Kutta condition
-        normals = np.zeros((self.panels.n_panels + 1, 2), dtype=np.float64)
-        normals[:-1, :] = self.panels.normals
-        return normals
-
     @cached_property
     def panels(self) -> Panel2D:
         """Panels that run from TE -> Bottom -> Top -> TE."""
@@ -61,8 +49,23 @@ class LinearVortex(PanelMethod):
         return self.panels.points_at(0.5)
 
     @cached_property
+    def unit_rhs_vector(self) -> np.ndarray:
+        """Normalized right-hand-side consisting of panel normals."""
+        # Final entry is (0, 0) which will enforce the Kutta condition
+        normals = np.zeros((self.panels.n_panels + 1, 2), dtype=np.float64)
+        normals[:-1, :] = self.panels.normals
+        return normals
+
+    @cached_property
     def influence_matrices(self) -> Dict[str, np.ndarray]:
-        """Normal and tangent influence coefficient matrices."""
+        """Normal and tangent influence coefficient matrices.
+
+        Note:
+            As the tangent influence matrix is only used for post
+            processing with :py:class:`ThickFlowSolution` the final
+            entry which represents the Kutta-condition does not need to
+            be included.
+        """
         start_pts, _ = self.panels.nodes
         im_normal, im_tangent = calc_linear_vortex_im(
             col_pts=self.collocation_points,
@@ -70,7 +73,7 @@ class LinearVortex(PanelMethod):
             panel_angles=self.panels.angles,
             panel_lengths=self.panels.lengths,
         )
-        return {"normal": im_normal, "tangent": im_tangent}
+        return {"normal": im_normal, "tangent": im_tangent[:-1, :-1]}
 
     @property
     def influence_matrix(self) -> np.ndarray:
@@ -94,6 +97,10 @@ class LinearVortex(PanelMethod):
             circulations=self.get_circulations(alpha)[:-1, :],
             alpha=alpha,
         )
+
+    @property
+    def solution_class(self):
+        return ThickFlowSolution
 
 
 @numba.jit(**BASE_NUMBA_CONFIG)
