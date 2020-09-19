@@ -16,12 +16,17 @@
 
 import math
 from functools import cached_property
+from typing import Type
 
 import numba
 import numpy as np
 
 from gammapy.geometry.panel import Panel2D
-from gammapy.solver.base import BASE_NUMBA_CONFIG, PanelMethod
+from gammapy.solver.base import (
+    BASE_NUMBA_CONFIG,
+    PanelMethod,
+    ThinFlowSolution,
+)
 
 AFFINE_90_CW = np.array([[0, -1], [1, 0]], dtype=np.float64)
 
@@ -55,6 +60,10 @@ class LumpedVortex(PanelMethod):
             col_pts=self.panels.points_at(0.75),
             panel_normals=self.panels.normals,
         )
+
+    @property
+    def solution_class(self) -> Type[ThinFlowSolution]:
+        return ThinFlowSolution
 
 
 @numba.jit(**BASE_NUMBA_CONFIG)
