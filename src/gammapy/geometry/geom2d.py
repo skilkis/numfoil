@@ -34,10 +34,6 @@ class Geom2D(np.ndarray):
         assert is_row_vector(array)
         return np.asarray(array, dtype=np.float64).view(cls)
 
-
-class Point2D(Geom2D):
-    """Defines a point in 2D space."""
-
     @property
     def x(self) -> np.ndarray:
         """Returns the x coordinate(s) of :py:class:`Point2D`."""
@@ -47,6 +43,10 @@ class Point2D(Geom2D):
     def y(self) -> np.ndarray:
         """Returns the y coordinate(s) of :py:class:`Point2D`."""
         return self[..., 1].view(np.ndarray)
+
+
+class Point2D(Geom2D):
+    """Defines a point in 2D space."""
 
     def __sub__(self, other) -> object:
         """Overloads subtract magic method to allow vector creation.
@@ -61,7 +61,7 @@ class Point2D(Geom2D):
             Vector2D([1, 1])  # A Vector2D object is created from a to b
 
             a - b
-            Vector2D([1, 1])  # A Vector2D object is created from b to a
+            Vector2D([-1, -1])  # A Vector2D from b to a
 
         However, if a simple scalar is added to the :py:class:`Point2D`
         object it will return a `Point2D` object as expected::
@@ -77,7 +77,7 @@ class Point2D(Geom2D):
             return super().__sub__(other)
 
 
-class Vector2D(Point2D):
+class Vector2D(Geom2D):
     """Defines a vector in 2D space."""
 
     @property
@@ -87,8 +87,5 @@ class Vector2D(Point2D):
 
     @property
     def normalized(self) -> np.ndarray:
-        """Returns the nit-vector(s) of :py:class:`Vector2D`."""
+        """Returns the unit-vector(s) of :py:class:`Vector2D`."""
         return normalize_2d(self)
-
-    # Subtracting vectors should not inherit Point2D behavior
-    __sub__ = Geom2D.__sub__
