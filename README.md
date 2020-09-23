@@ -4,6 +4,7 @@
 [![License: Apache 2.0][apache_badge]](https://www.apache.org/licenses/LICENSE-2.0)
 [![Code Style: Black][black_badge]](https://github.com/ambv/black)
 [![CICD: GitHub Actions][build_status]](https://github.com/kswannet/GammaPy/actions)
+[![codecov](https://codecov.io/gh/skilkis/GammaPy/branch/master/graph/badge.svg)](https://codecov.io/gh/skilkis/GammaPy)
 
 ## Installation
 
