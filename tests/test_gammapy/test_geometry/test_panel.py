@@ -156,7 +156,7 @@ class TestPanel2D(ScenarioTestSuite):
         # Testing if point is on panel and if u is correct using
         # The length of line segments method: A-C------B:
         # https://stackoverflow.com/a/17693146/11989587
-        for pt, start, end, in zip(pts, starts, ends):
+        for pt, start, end in zip(pts, starts, ends):
             length_AC = np.linalg.norm(pt - start)
             length_BC = np.linalg.norm(end - pt)
             length_AB = np.linalg.norm(end - start)
@@ -185,7 +185,7 @@ class TestPanel2D(ScenarioTestSuite):
 
         # Making sure that the axis is equal which is important
         # for the direction of the Quiver arrows to rendered correctly
-        assert ax._aspect == "equal"
+        assert ax._aspect == 1.0
 
     EXPECTED_ITEMS = {
         "plate": {
