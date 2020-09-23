@@ -29,7 +29,13 @@ jobs:
         python-version: [3.8]
 
     steps:
+      - name: Checkout Repository
       - uses: actions/checkout@v2
+        with:
+          lfs: true
+      - name: Checkout LFS objects
+        run: |
+          git lfs checkout
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v1
         with:
