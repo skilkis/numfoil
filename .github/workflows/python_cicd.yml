@@ -17,7 +17,7 @@ name: build
 on:
   push:
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build:
@@ -29,30 +29,39 @@ jobs:
         python-version: [3.8]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Restoring Downloaded Packages
-      uses: actions/cache@v1
-      id: cache
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}-${{ matrix.python-version }}
-    - name: Installing Package and Dependencies
-      # All dependencies have to be specified in setup.cfg!
-      run: |
-        python -m pip install --upgrade pip
-        pip install .[dev]
-    - name: Linting/Style Checking with Flake8 (Black, isort, docstrings)
-      run: |
-        pip install flake8
-        flake8 . --count --statistics
-    - name: Unit Testing with Pytest
-      run: |
-        pip install pytest
-        pytest
-    - name: Checking Code Coverage
-      run: |
-        coverage report --fail-under=90
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Restoring Downloaded Packages
+        uses: actions/cache@v1
+        id: cache
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}-${{ matrix.python-version }}
+      - name: Installing Package and Dependencies
+        # All dependencies have to be specified in setup.cfg!
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+      - name: Unit Testing with Pytest
+        run: |
+          pip install pytest
+          pytest
+      - name: Linting/Style Checking with Flake8 (Black, isort, docstrings)
+        run: |
+          pip install flake8
+          flake8 . --count --statistics --exit-zero
+      - name: Checking Code Coverage
+        run: |
+          coverage report --fail-under=70
+      - name: Upload Code Coverage
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: coverage.xml
+          flags: unittests
+          env_vars: ${{ runner.os }},${{ matrix.python-version }}
+          fail_ci_if_error: true
+          path_to_write_report: codecov_report.gz
