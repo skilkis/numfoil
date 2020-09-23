@@ -14,7 +14,18 @@
 
 """Entry point for setuptools, configuration is in setup.cfg."""
 
+from pathlib import Path
+
 from setuptools import setup
 
+with open(Path(__file__).parent / ".version") as f:
+    __version__ = f.readline()
+
 if __name__ == "__main__":
-    setup(use_scm_version=True)
+    setup(
+        use_scm_version={
+            "fallback_version": __version__,
+            "write_to": ".version",
+            "write_to_template": "{version}",
+        }
+    )
