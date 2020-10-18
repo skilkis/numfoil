@@ -8,7 +8,7 @@ on:
 
 env:
     # LaTeX root (main) filepath without file-extension
-    root_file: docs/main
+    root_file: main
     artifact_name: docs
 
 jobs:
@@ -23,6 +23,7 @@ jobs:
               uses: xu-cheng/latex-action@v2
               with:
                   root_file: ${{ env.root_file }}.tex
+                  working_directory: docs/
                   latexmk_use_xelatex: true
                   latexmk_shell_escape: true
                   extra_system_packages: "py-pygments" # Needed for the minted package
