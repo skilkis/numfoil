@@ -31,7 +31,7 @@ jobs:
               uses: actions/upload-artifact@v2
               with:
                   name: ${{ env.artifact_name }}
-                  path: ${{ env.root_file }}.pdf
+                  path: docs/${{ env.root_file }}.pdf
                   if-no-files-found: error
 
     release:
@@ -83,6 +83,6 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                   upload_url: ${{ steps.create_release.outputs.upload_url }}
-                  asset_path: ${{ env.root_file }}.pdf
+                  asset_path: docs/${{ env.root_file }}.pdf
                   asset_name: ${{ env.root_file }}.pdf
                   asset_content_type: application/pdf
