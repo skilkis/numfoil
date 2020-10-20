@@ -7,22 +7,25 @@ The format is based on [Keep a Changelog], and this project adheres to
 signified by major version 0. Therefore, the API is subject to frequent
 changes and backwards compatibility is not guaranteed.
 
-## Unreleased
-<!-- First release will be 0.1.0 as advised by Semantic Versioning -->
-<!-- ## [0.1.0] - 2020-04-29 -->
+## [0.1.0] - 2020-10-20
 
 ### Added
 
+- 2D geometric feature package into the `geometry/` directory
+- Vectorized high-performance panel methods into the `solver/` directory
+- `tests/` folder containing [pytest] unit-tests
+- Initial assignment report added to the `docs/` directory
+- Assignment I task scripts to the `assignment/` directory
+- UML activity and class diagram to the `assignment/` directory
+- GitHub Actions to automate deployment as well as code-coverage metrics
 - Template to permit use of the `src/` Python package layout
 - `setup.py` and `setup.cfg` file for setting project metadata, dependencies,
   code formatting, testing, and linting/style options
-- `.gitignore` file to specify un-tracked files
+- `.gitignore` file to specify untracked files
 - `.editorconfig` file to enforce line endings and file encodings/whitespace
 - `pyproject.toml` file for setting [black] character limit
 - Ability to install `gammapy` installable through [pip]
-- `tests/` folder with a sample test for verifying [pytest]
 - Apache 2.0 license header and license file
-- Assignment I tasks templates to an `assignment` folder
 - Sample `test_airfoil` unit-test to trigger `coverage.py` to run
 - [README.md] to instruct users how to install `gammapy`
 - [CONTRIBUTING.md] file to welcome new developers to the project
@@ -31,6 +34,7 @@ changes and backwards compatibility is not guaranteed.
 ### Changed
 
 - Location of Python files into the new `src/gammapy/` directory
+- Location of old panel methods and moved them into `src/gammapy/legacy/`
 
 ### Removed
 
