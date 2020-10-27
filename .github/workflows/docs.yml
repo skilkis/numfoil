@@ -83,6 +83,6 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                   upload_url: ${{ steps.create_release.outputs.upload_url }}
-                  asset_path: docs/${{ env.root_file }}.pdf
+                  asset_path: ${{ env.root_file }}.pdf
                   asset_name: report.pdf
                   asset_content_type: application/pdf
