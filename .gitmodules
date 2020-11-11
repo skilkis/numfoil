@@ -1,0 +1,3 @@
+[submodule "docs/tudelft-light"]
+	path = docs/tudelft-light
+	url = https://github.com/skilkis/tudelft-light-template.git
