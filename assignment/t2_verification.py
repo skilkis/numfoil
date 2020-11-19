@@ -3,6 +3,7 @@
 import csv
 from math import pi
 from pathlib import Path
+from typing import Dict, Generator, List, Sequence
 
 import numpy as np
 import xfoil
@@ -30,6 +31,44 @@ from gammapy.solver.m_linear_vortex import LinearVortex
 
 
 DATA_DIR = Path(__file__).parent / "reference_data"
+
+
+def splitby(sequence: Sequence, n: int) -> Generator[Sequence, None, None]:
+    """Split a ``sequence`` into chunks of size ``n``."""
+    for i in range(0, len(sequence), n):
+        yield sequence[i : i + n]
+
+
+def parse_naca0015_table(
+    filename: str = "naca0015_assignment.txt",
+) -> Dict[str, List[float]]:
+    """Parses the single column NACA0015 table."""
+    table = {
+        "station": [],
+        "x": [],
+        "Cp0": [],
+        "Cp5": [],
+    }
+    with open(DATA_DIR / filename) as f:
+        lines = f.readlines()
+        # Splitting single column data into chunks to represent columns
+        for chunk in splitby(lines, n=(len(table.keys()) + 1)):
+            station, x, cp0, _, cp5 = chunk
+            for key, value in zip(table.keys(), (station, x, cp0, cp5)):
+                table[key].append(float(value))
+    return table
+
+
+naca0015_data = parse_naca0015_table()
+
+# Temporary plot of assignment NACA0015 table data
+fig, ax = plt.subplots()
+ax.plot(naca0015_data["x"], naca0015_data["Cp5"])
+ax.invert_yaxis()
+ax.set_ylabel("Pressure Coefficient")
+ax.set_xlabel("Normalized Chordwise Location")
+ax.set_title(r"NACA0015 at $\alpha=5$ [deg]")
+plt.show()
 
 
 def get_xfoil_cp(nacafoil):
