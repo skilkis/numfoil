@@ -18,12 +18,12 @@ import numpy as np
 import pytest
 from scipy import integrate
 
-from gammapy.solver.m_constant_vortex import (
+from numfoil.solver.m_constant_vortex import (
     gcs_to_pcs,
     pcs_to_gcs,
     vortex_c_2d,
 )
-from gammapy.solver.m_lumped_vortex import vortex_2d
+from numfoil.solver.m_lumped_vortex import vortex_2d
 
 GCS_TO_PCS_TEST_CASES = {
     "argnames": "point, reference_point, angle, expected_result",

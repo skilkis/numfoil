@@ -14,8 +14,8 @@
 
 import numpy as np
 
-from gammapy.geometry.spline import BSpline2D
-from tests.test_gammapy.helpers import ScenarioTestSuite
+from numfoil.geometry.spline import BSpline2D
+from tests.test_numfoil.helpers import ScenarioTestSuite
 
 
 class TestBSpline2D(ScenarioTestSuite):

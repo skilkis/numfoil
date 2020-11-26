@@ -17,10 +17,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from gammapy.geometry.airfoil import NACA4Airfoil
-from gammapy.geometry.panel import Panel2D
-from gammapy.solver.base import PanelMethod
-from gammapy.solver.m_linear_vortex import (
+from numfoil.geometry.airfoil import NACA4Airfoil
+from numfoil.geometry.panel import Panel2D
+from numfoil.solver.base import PanelMethod
+from numfoil.solver.m_linear_vortex import (
     calc_integration_constants,
     calc_linear_vortex_im,
     calc_vortex_coefficients,

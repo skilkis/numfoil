@@ -15,7 +15,7 @@
 import numpy as np
 import pytest
 
-from gammapy.geometry.vector2d import (
+from numfoil.geometry.vector2d import (
     is_row_vector,
     magnitude_2d,
     normalize_2d,

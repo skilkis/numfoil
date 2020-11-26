@@ -18,9 +18,9 @@ import numpy as np
 import pytest
 from pytest import approx
 
-from gammapy.legacy.panel.thick import Solver, ThickPanelledAirfoil
-from gammapy.geometry.airfoil import NACA4Airfoil
-from tests.test_gammapy.helpers import ScenarioTestSuite
+from numfoil.legacy.panel.thick import Solver, ThickPanelledAirfoil
+from numfoil.geometry.airfoil import NACA4Airfoil
+from tests.test_numfoil.helpers import ScenarioTestSuite
 
 
 @pytest.fixture(scope="module")

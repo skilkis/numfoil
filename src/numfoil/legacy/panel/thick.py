@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pylab as pl
 
-from gammapy.legacy.panel.thick_functions import airfoil, make_panels, normals
+from numfoil.legacy.panel.thick_functions import airfoil, make_panels, normals
 
 # chow pg 160
 
@@ -182,7 +182,10 @@ class Coefficients:
                     self.CT2[i][j] = pi / 2
 
                 else:
-                    if i == self.panels.n_panels - 1 and j == self.panels.n_panels - 2:
+                    if (
+                        i == self.panels.n_panels - 1
+                        and j == self.panels.n_panels - 2
+                    ):
                         print()
                     self.A = -(
                         self.panels.collocation_points[i][0]
@@ -314,6 +317,7 @@ class Coefficients:
 
 
 if __name__ == "__main__":
+
     def solve():
         foil = ThickPanelledAirfoil(Naca="0012", n_panels=2000)
         # foil.panels.plt(points=True, num=False)

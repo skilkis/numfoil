@@ -16,8 +16,8 @@
 
 # import numpy as np
 
-# from gammapy.functions import airfoil, v_comp
-# from gammapy.panel.vortex_sheet import solve_vorticity as solve_vorticity
+# from numfoil.functions import airfoil, v_comp
+# from numfoil.panel.vortex_sheet import solve_vorticity as solve_vorticity
 
 # Katz&Plotkin pg267
 # def test_vorticity():

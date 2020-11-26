@@ -9,9 +9,9 @@ import numpy as np
 import xfoil
 from matplotlib import pyplot as plt
 
-from gammapy.geometry.airfoil import NACA4Airfoil
-from gammapy.legacy.panel.thick import Solver, ThickPanelledAirfoil
-from gammapy.solver.m_linear_vortex import LinearVortex
+from numfoil.geometry.airfoil import NACA4Airfoil
+from numfoil.legacy.panel.thick import Solver, ThickPanelledAirfoil
+from numfoil.solver.m_linear_vortex import LinearVortex
 
 # from xfoil import find_pressure_coefficients
 
@@ -43,7 +43,7 @@ def parse_naca0015_table(
     filename: str = "naca0015_assignment.txt",
 ) -> Dict[str, List[float]]:
     """Parses the single column NACA0015 table."""
-    table = {
+    table: Dict[str, List[float]] = {
         "station": [],
         "x": [],
         "Cp0": [],
@@ -103,7 +103,7 @@ xfoil_0012 = xfoil.find_pressure_coefficients("naca0012", alpha=3, delete=True)
 Cp1, cl1, foil1 = get_data(Naca="0012", alpha=3)
 fig, ax = plt.subplots()
 ax.plot(
-    [i[0] for i in foil1.panels.collocation_points], Cp1, "k", label="GammaPy"
+    [i[0] for i in foil1.panels.collocation_points], Cp1, "k", label="NumFoil"
 )
 ax.plot(xfoil_0012["x"], xfoil_0012["Cp"], "xr", markevery=5, label="XFOIL")
 ax.invert_yaxis()
@@ -143,9 +143,9 @@ cl4412_xfoil = get_xfoil_cl("naca4412", alfas)
 
 fig, ax = plt.subplots()
 ax.plot(alfas, cl0012_xfoil, "k", label=" Xfoil")
-ax.plot(alfas, cl0012, "b", label=" GammaPy")
+ax.plot(alfas, cl0012, "b", label=" NumFoil")
 # ax.plot(*zip(*cl4412_xfoil), "g", label="NACA4412 Xfoil")
-# ax.plot([i[0] for i in cl4412_xfoil], cl4412, "r", label="NACA4412 GammaPy")
+# ax.plot([i[0] for i in cl4412_xfoil], cl4412, "r", label="NACA4412 NumFoil")
 ax.set_ylabel(r"$C_l$")
 ax.set_xlabel(r"$\alpha$")
 plt.legend(loc="best")
@@ -154,7 +154,7 @@ plt.style.use("ggplot")
 
 fig, ax = plt.subplots()
 ax.plot(alfas, cl4412_xfoil, "g", label=" Xfoil")
-ax.plot(alfas, cl4412, "r", label=" GammaPy")
+ax.plot(alfas, cl4412, "r", label=" NumFoil")
 ax.set_ylabel(r"$C_l$")
 ax.set_xlabel(r"$\alpha$")
 plt.legend(loc="best")
