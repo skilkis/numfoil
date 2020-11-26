@@ -8,7 +8,8 @@
 
 ## Installation
 
-Once [Git] is installed on the system the following command will install Γpy:
+Once [Git] is installed on the system the following command will install
+NumFoil:
 
 ``` cmd
 pip install  git+https://github.com/skilkis/numfoil.git
