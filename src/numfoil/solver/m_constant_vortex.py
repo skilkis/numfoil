@@ -21,8 +21,8 @@ from typing import Dict, Sequence, Tuple, Union
 import numba
 import numpy as np
 
-from gammapy.geometry.panel import Panel2D
-from gammapy.solver.base import BASE_NUMBA_CONFIG, PanelMethod
+from numfoil.geometry.panel import Panel2D
+from numfoil.solver.base import BASE_NUMBA_CONFIG, PanelMethod
 
 # Great source explaining it
 # https://www.youtube.com/watch?v=Ai0o5ppUTuk

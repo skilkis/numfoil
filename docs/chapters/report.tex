@@ -1,4 +1,4 @@
-\newcommand{\gammapy}{$\boldsymbol{\Gamma}$\textbf{py}\ }
+\newcommand{\numfoil}{$\boldsymbol{\Gamma}$\textbf{py}\ }
 \chapter{Problem description}
 To get a preliminary estimation of an airfoil's performance, numerical methods
 can be used which represent the airfoil as a series of flat, zero-thickness,
@@ -29,7 +29,7 @@ for each of the two methods in the following sections.
 % \caption{Flow diagram showing the general structure of the created solver program.}
 % \end{figure}
 
-\chapter{\gammapy Implementation}
+\chapter{\numfoil Implementation}
 
 \blindtext
 
@@ -39,7 +39,7 @@ for each of the two methods in the following sections.
     \begin{center}
       \includegraphics[width=0.40\textwidth]{static/activity_diagram.pdf}
     \end{center}
-    \caption{UML Activity Diagram of \gammapy}
+    \caption{UML Activity Diagram of \numfoil}
     \label{fig:activity}
 \end{wrapfigure}
 
@@ -347,12 +347,12 @@ $\epsilon=-2.07\%$ at $\alpha=10\deg$. These results are also shown as plots in 
 
 \begin{table}[H]
 	\centering
-	\caption{Estimated values of $C_l$ for a range of angles of attack from XFOIL and GammaPy, as well as the relative error, for NACA0012 and NACA4412.}
+	\caption{Estimated values of $C_l$ for a range of angles of attack from XFOIL and NumFoil, as well as the relative error, for NACA0012 and NACA4412.}
 	\label{tab:cl_thick}
     \begin{tabularx}{\textwidth}{C  C C C | C C C} %'L' for Left Aligned, 'C' for Centered, 'R' for Right Aligned
     \toprule\
     \hfill & \multicolumn{3}{c}{$C_l$ NACA0012} & \multicolumn{3}{c}{$C_l$ NACA4412} \\ \toprule
-    {$\alpha \:[\deg]$} & {$GammaPy$} & {$XFOIL$} & {$\epsilon$} & {$GammaPy$} & {$XFOIL$} & {$\epsilon$} \\ \toprule
+    {$\alpha \:[\deg]$} & {$NumFoil$} & {$XFOIL$} & {$\epsilon$} & {$NumFoil$} & {$XFOIL$} & {$\epsilon$} \\ \toprule
     0   & 0        & 0      & 0         & 0.5100 & 0.5109  & +0.0018    \\ \hdashline
     3   & 0.3623   & 0.3583 & -0.0110   & 0.8715 & 0.8634  & -0.0093    \\ \hdashline
     5   & 0.6034   & 0.5952 & -0.0136   & 1.1113 & 1.0983  & -0.0117    \\ \hdashline

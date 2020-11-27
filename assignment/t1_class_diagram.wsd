@@ -11,7 +11,7 @@ class abc.ABCMeta << (M,#FF7700) metaclass >> {
     + __subclasshook__(): bool or NotImplemented
 }
 
-package "Γpy" as gammapy #DDDDDD {
+package "NumFoil" as numfoil #DDDDDD {
 
 
     package geometry #CFCFCF {

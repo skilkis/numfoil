@@ -3,7 +3,7 @@
 
 from matplotlib import pyplot as plt
 
-from gammapy.legacy.panel.thick import Solver, ThickPanelledAirfoil
+from numfoil.legacy.panel.thick import Solver, ThickPanelledAirfoil
 
 
 def get_data(Naca="0012", alpha=0):

@@ -1,13 +1,13 @@
-# Contributing to Γpy (A Guide for Developers)
+# Contributing to NumFoil (A Guide for Developers)
 
 ## Installation
 
 ### 1. Cloning the Repository
 
-To grab the latest version of `gammapy` run the following command:
+To grab the latest version of `numfoil` run the following command:
 
 ``` cmd
-git clone -b develop https://github.com/kswannet/GammaPy.git
+git clone -b develop https://github.com/skilkis/numfoil.git
 ```
 
 ### 2. Creating and Activating a Virtual Environment
@@ -66,7 +66,7 @@ multiple developers as everyone usually has their own formatting tastes.
 However, as with all joint endeavors the way forward is through compromise...or
 in this case an auto-formatter with a heavy hand. All of the required packages
 and their respect extensions will be automatically installed if the `[dev]`
-specifier is added when installing `gammapy`.
+specifier is added when installing `numfoil`.
 
 ### Git Commits
 

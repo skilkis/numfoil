@@ -17,7 +17,7 @@ import math
 import numpy as np
 import pytest
 
-from gammapy.solver.base import PanelMethod
+from numfoil.solver.base import PanelMethod
 
 
 class TestPanelMethod:

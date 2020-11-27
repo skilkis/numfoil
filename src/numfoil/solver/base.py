@@ -23,10 +23,10 @@ from typing import Generator, Optional, Sequence, Tuple, Type, Union
 import numpy as np
 from matplotlib import pyplot as plt
 
-from gammapy.geometry import Airfoil
-from gammapy.geometry.geom2d import Vector2D
-from gammapy.geometry.panel import Panel2D
-from gammapy.geometry.vector2d import rotate_2d_90ccw
+from numfoil.geometry import Airfoil
+from numfoil.geometry.geom2d import Vector2D
+from numfoil.geometry.panel import Panel2D
+from numfoil.geometry.vector2d import rotate_2d_90ccw
 
 FAST_MATH_FLAGS = {
     # Refer to https://llvm.org/docs/LangRef.html#fast-math-flags

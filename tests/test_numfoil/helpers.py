@@ -12,7 +12,7 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-"""Collections of test helpers for the GammaPy package."""
+"""Collections of test helpers for the NumFoil package."""
 
 import os
 from collections import namedtuple

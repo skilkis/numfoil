@@ -21,8 +21,8 @@ from typing import Type
 import numba
 import numpy as np
 
-from gammapy.geometry.panel import Panel2D
-from gammapy.solver.base import (
+from numfoil.geometry.panel import Panel2D
+from numfoil.solver.base import (
     BASE_NUMBA_CONFIG,
     PanelMethod,
     ThinFlowSolution,
@@ -147,7 +147,7 @@ def calc_lumped_vortex_im(  # noqa: D103
 
 
 if __name__ == "__main__":
-    from gammapy.geometry.airfoil import NACA4Airfoil, ParabolicCamberAirfoil
+    from numfoil.geometry.airfoil import NACA4Airfoil, ParabolicCamberAirfoil
 
     a = NACA4Airfoil("naca9512")
     a = ParabolicCamberAirfoil(0.1)

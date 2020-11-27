@@ -20,8 +20,8 @@ from typing import Dict
 import numpy as np
 import pytest
 
-from gammapy.geometry import Airfoil, NACA4Airfoil, UIUCAirfoil
-from tests.test_gammapy.helpers import (
+from numfoil.geometry import Airfoil, NACA4Airfoil, UIUCAirfoil
+from tests.test_numfoil.helpers import (
     ScenarioTestSuite,
     calc_curve_error,
     get_naca_airfoils,

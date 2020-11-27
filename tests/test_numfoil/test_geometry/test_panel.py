@@ -16,9 +16,9 @@ import numpy as np
 import pytest
 from matplotlib.quiver import Quiver
 
-from gammapy.geometry.geom2d import Point2D, Vector2D
-from gammapy.geometry.panel import Panel2D
-from tests.test_gammapy.helpers import ScenarioTestSuite
+from numfoil.geometry.geom2d import Point2D, Vector2D
+from numfoil.geometry.panel import Panel2D
+from tests.test_numfoil.helpers import ScenarioTestSuite
 
 
 class TestPanel2D(ScenarioTestSuite):
