@@ -20,8 +20,7 @@ import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
 
-from .geom2d import Geom2D, Point2D, Vector2D
-from .vector2d import rotate_2d_90ccw
+from .geom2d import Geom2D, Point2D, Vector2D, rotate_2d_90ccw
 
 
 class Panel2D(Geom2D):

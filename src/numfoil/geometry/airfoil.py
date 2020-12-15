@@ -23,12 +23,10 @@ import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
 
+from .geom2d import normalize_2d, rotate_2d_90ccw
 from .spline import BSpline2D
-from .vector2d import normalize_2d, rotate_2d_90ccw
 
 # TODO Add NACA5 series Airfoil as a fun nice-to-have feature
-# TODO Add the ability to import an arbitrary airfoil from a data-file
-# TODO use bezier package on PyPi to have camber-line calculations
 
 AIRFOIL_REPR_REGEX = re.compile(r"[.]([A-Z])\w+")
 

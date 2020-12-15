@@ -21,7 +21,7 @@ from typing import Dict, Sequence, Tuple, Union
 import numba
 import numpy as np
 
-from numfoil.geometry.panel import Panel2D
+from numfoil.geometry import Panel2D
 from numfoil.solver.base import BASE_NUMBA_CONFIG, PanelMethod
 
 # Great source explaining it
