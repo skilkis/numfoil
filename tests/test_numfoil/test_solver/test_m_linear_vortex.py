@@ -17,8 +17,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from numfoil.geometry.airfoil import NACA4Airfoil
-from numfoil.geometry.panel import Panel2D
+from numfoil.geometry import NACA4Airfoil, Panel2D
 from numfoil.solver.base import PanelMethod
 from numfoil.solver.m_linear_vortex import (
     calc_integration_constants,

@@ -6,7 +6,7 @@ from typing import Optional, Union
 import numpy as np
 import scipy.interpolate as si
 
-from .vector2d import normalize_2d, rotate_2d_90ccw
+from .geom2d import normalize_2d, rotate_2d_90ccw
 
 
 class BSpline2D:

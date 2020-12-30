@@ -14,7 +14,7 @@
 
 import numpy as np
 
-from numfoil.geometry.spline import BSpline2D
+from numfoil.geometry import BSpline2D
 from tests.test_numfoil.helpers import ScenarioTestSuite
 
 
