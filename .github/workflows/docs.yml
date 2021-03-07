@@ -1,10 +1,11 @@
 name: docs
 on:
     push:
-        branches:
-            - docs
         tags:
             - "v[0-9]+.[0-9]+.[0-9]+*"
+        # Run only when a file changes within the docs folder, ignored for tags
+        paths:
+            - docs/**
 
 env:
     # LaTeX root (main) filepath without file-extension
