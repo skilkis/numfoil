@@ -9,7 +9,7 @@ import numpy as np
 import xfoil
 from matplotlib import pyplot as plt
 
-from numfoil.geometry.airfoil import NACA4Airfoil
+from numfoil.geometry import NACA4Airfoil
 from numfoil.legacy.panel.thick import Solver, ThickPanelledAirfoil
 from numfoil.solver.m_linear_vortex import LinearVortex
 
@@ -123,7 +123,10 @@ def get_xfoil_cl(airfoil, alphas):
     ]
 
 
-alfas = [0, 3, 5, 8, 10, 13, 15]
+def delta_cp_plotkin(x: np.ndarray, eta: float, c: float = 1.0) -> np.ndarray:
+    return 4 * np.sqrt((c - x) / x) + 32 * eta / c * np.sqrt(
+        (xc := (x / c)) * (1 - xc)
+    )
 
 
 def get_cls(naca):
