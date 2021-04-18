@@ -55,23 +55,32 @@ plt.show()
 
 # * ################# plotkin verification funciton ###########################
 
-def delta_cp_plotkin(x: np.ndarray, eta: float, c: float = 1.0) -> np.ndarray:
+
+def delta_cp_plotkin(
+    x: np.ndarray, alpha: float, eta: float, c: float = 1.0
+) -> np.ndarray:
     """Exact analytical pressure coefficient for a parabolic airfoil."""
-    return 4 * np.sqrt((c - x) / x) + 32 * eta / c * np.sqrt(
-        (xc := (x / c)) * (1 - xc)
-    )
+    return 4 * np.sqrt((c - x) / x) * np.radians(
+        alpha
+    ) + 32 * eta / c * np.sqrt((xc := (x / c)) * (1 - xc))
 
-# * #########################idk what this is##################################
 
-def get_xfoil_cl(airfoil, alphas):
-    return [
-        xfoil.find_coefficients("naca0012", alpha=alpha, delete=True)["CL"]
-        for alpha in alphas
-    ]
+eta = 0.1
+alpha = 10
+solution = LumpedVortex(
+    airfoil=ParabolicCamberAirfoil(eta=0.1), n_panels=20, spacing="linear",
+).solve_for(alpha=alpha)
+fig, ax = solution.plot_delta_cp()
+x = np.linspace(0, 1, 1000)[1:]
+ax.plot(x, delta_cp_plotkin(x, alpha=alpha, eta=0.1), label="Exact Solution")
+ax.set_ylim([0, 5])
+ax.legend(loc="best")
+plt.show()
+fig.savefig(FIGURE_DIR / "thin_airfoil_verification.pdf", bbox_inches="tight")
+
+print(f"Thin Lift Coefficient = {solution.lift_coefficient}")
+
 # * ###########################################################################
-
-
-
 
 
 # * verification of the thick method
