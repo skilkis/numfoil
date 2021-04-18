@@ -14,6 +14,8 @@
 
 """Contains definitions used to define a panel method solver."""
 
+from __future__ import annotations
+
 import math
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
@@ -24,6 +26,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from numfoil.geometry import Airfoil, Panel2D, Vector2D, rotate_2d_90ccw
+from numfoil.util import delta_cp_from_cp
 
 FAST_MATH_FLAGS = {
     # Refer to https://llvm.org/docs/LangRef.html#fast-math-flags
@@ -71,7 +74,7 @@ class FlowSolution(metaclass=ABCMeta):
 
     def __init__(
         self,
-        method: object,
+        method: PanelMethod,
         circulations: np.ndarray,
         alpha: Union[float, Sequence[float]],
     ):
@@ -119,15 +122,22 @@ class FlowSolution(metaclass=ABCMeta):
 
         # Determines which alpha to plot if ``alpha`` is specified
         for idx, a in self.enumerate_alpha(alpha):
+            delta_cp = self.delta_pressure_coefficients[:, idx]
+            panels = self.method.panels
+            x = panels.points_at(0.5).x
+            is_contour = x.shape[0] > delta_cp.shape[0]
+            if is_contour:
+                x = x[panels.n_panels // 2 :]
             ax.plot(
-                self.method.panels.points_at(0.5).x,
-                self.delta_pressure_coefficients[:, idx],
+                x,
+                delta_cp,
                 marker=".",
                 label=f"$\\alpha = {a}$",
             )
         ax.legend(loc="best")
-        ax.set_xlabel("Normalized Location Along the Chordline [-]")
+        ax.set_xlabel("Normalized Location Along the Chordline $\\frac{x}{c}$")
         ax.set_ylabel("Pressure Coefficient Difference $\\Delta C_P$")
+        return fig, ax
 
     def plot_pressure_distribution(self, alpha: Optional[float] = None):
         fig, ax = plt.subplots()
@@ -167,7 +177,10 @@ class FlowSolution(metaclass=ABCMeta):
             )
         fig, ax = plt.subplots()
         ax.plot(
-            self.alpha, self.lift_coefficient, marker="o", label=label,
+            self.alpha,
+            self.lift_coefficient,
+            marker="o",
+            label=label,
         )
         ax.set_xlabel("Angle of Attack, $\\alpha$ [deg]")
         ax.set_ylabel("Lift Coefficient, $C_l$ [-]")
@@ -208,6 +221,20 @@ class ThinFlowSolution(FlowSolution):
 # final physical properties
 class ThickFlowSolution(FlowSolution):
     """Interprets arbitrary thickness surface panel method results."""
+
+    # @cached_property
+    # def le_idx(self) -> int:
+    #     """Returns the panel index corresponding to the leading-edge."""
+    #     return np.argwhere(self.method.panels == np.min(self.method.panels.x, axis=0))[0, 0]
+
+    @cached_property
+    def delta_pressure_coefficients(self) -> np.ndarray:
+        cp = self.pressure_coefficients
+        n_panels = self.method.panels.n_panels
+        cp_bot = cp[(n_panels // 2) - 1 :: -1]
+        cp_top = cp[n_panels // 2 :]
+        return cp_bot - cp_top
+        # le_idx = np.argwhere( == np.max(cp, axis=0))[0, 0]
 
     @cached_property
     def flow_direction(self) -> Vector2D:
@@ -367,7 +394,9 @@ class PanelMethod(metaclass=ABCMeta):
         return FlowSolution
 
     def solve_for(
-        self, alpha: Union[float, Sequence[float]], plot: bool = False,
+        self,
+        alpha: Union[float, Sequence[float]],
+        plot: bool = False,
     ) -> FlowSolution:
         """Calculates a flow solution for the provided ``alpha``."""
         return self.solution_class(
