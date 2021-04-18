@@ -26,7 +26,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from numfoil.geometry import Airfoil, Panel2D, Vector2D, rotate_2d_90ccw
-from numfoil.util import delta_cp_from_cp
 
 FAST_MATH_FLAGS = {
     # Refer to https://llvm.org/docs/LangRef.html#fast-math-flags
@@ -92,6 +91,17 @@ class FlowSolution(metaclass=ABCMeta):
 
     @property
     @abstractmethod
+    def delta_locations(self) -> np.ndarray:
+        """Chord-line (x) locations corresponding to difference values.
+
+        Note:
+            This property is useful to allow specialized classes
+            to override at which location they specify values that
+            involve quantities involving differences.
+        """
+
+    @property
+    @abstractmethod
     def pressure_coefficients(self) -> np.ndarray:
         """Pressure coefficient distribution across all panels."""
 
@@ -122,15 +132,9 @@ class FlowSolution(metaclass=ABCMeta):
 
         # Determines which alpha to plot if ``alpha`` is specified
         for idx, a in self.enumerate_alpha(alpha):
-            delta_cp = self.delta_pressure_coefficients[:, idx]
-            panels = self.method.panels
-            x = panels.points_at(0.5).x
-            is_contour = x.shape[0] > delta_cp.shape[0]
-            if is_contour:
-                x = x[panels.n_panels // 2 :]
             ax.plot(
-                x,
-                delta_cp,
+                self.delta_locations,
+                self.delta_pressure_coefficients[:, idx],
                 marker=".",
                 label=f"$\\alpha = {a}$",
             )
@@ -177,10 +181,7 @@ class FlowSolution(metaclass=ABCMeta):
             )
         fig, ax = plt.subplots()
         ax.plot(
-            self.alpha,
-            self.lift_coefficient,
-            marker="o",
-            label=label,
+            self.alpha, self.lift_coefficient, marker="o", label=label,
         )
         ax.set_xlabel("Angle of Attack, $\\alpha$ [deg]")
         ax.set_ylabel("Lift Coefficient, $C_l$ [-]")
@@ -201,12 +202,17 @@ class ThinFlowSolution(FlowSolution):
     """Interprets thin airfoil theory panel method results."""
 
     @cached_property
-    def delta_pressure_coefficients(self):
+    def delta_pressure_coefficients(self) -> np.ndarray:
         """Pressure coefficient change across each panel."""
         return 2 * self.circulations / self.method.panels.lengths
 
     @cached_property
-    def pressure_coefficients(self):
+    def delta_locations(self) -> np.ndarray:
+        """Chord-locations of the delta pressure coefficients."""
+        return self.method.panels.points_at(0.5).x
+
+    @cached_property
+    def pressure_coefficients(self) -> np.ndarray:
         """Pressure coefficient measured on each panel."""
         return -self.delta_pressure_coefficients
 
@@ -222,11 +228,6 @@ class ThinFlowSolution(FlowSolution):
 class ThickFlowSolution(FlowSolution):
     """Interprets arbitrary thickness surface panel method results."""
 
-    # @cached_property
-    # def le_idx(self) -> int:
-    #     """Returns the panel index corresponding to the leading-edge."""
-    #     return np.argwhere(self.method.panels == np.min(self.method.panels.x, axis=0))[0, 0]
-
     @cached_property
     def delta_pressure_coefficients(self) -> np.ndarray:
         cp = self.pressure_coefficients
@@ -234,7 +235,12 @@ class ThickFlowSolution(FlowSolution):
         cp_bot = cp[(n_panels // 2) - 1 :: -1]
         cp_top = cp[n_panels // 2 :]
         return cp_bot - cp_top
-        # le_idx = np.argwhere( == np.max(cp, axis=0))[0, 0]
+
+    @cached_property
+    def delta_locations(self) -> np.ndarray:
+        """Selects top-surface panel midpoints for delta cp."""
+        locations = (panels := self.method.panels).points_at(0.5)
+        return locations[panels.n_panels // 2 :].x
 
     @cached_property
     def flow_direction(self) -> Vector2D:
