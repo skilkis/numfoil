@@ -1,10 +1,6 @@
 """Task 2: Verification with a thin NACA Airfoil."""
 
-from math import pi
 from pathlib import Path
-
-from numpy.core.function_base import linspace
-from src.numfoil.solver.m_lumped_vortex import LumpedVortex
 from typing import Dict, Generator, List, Sequence
 
 import numpy as np
@@ -12,11 +8,9 @@ import xfoil
 from matplotlib import pyplot as plt
 
 from numfoil.geometry import NACA4Airfoil
-from numfoil.legacy.panel.thick import Solver, ThickPanelledAirfoil
+from numfoil.geometry.airfoil import ParabolicCamberAirfoil
 from numfoil.solver.m_linear_vortex import LinearVortex
-
-
-
+from numfoil.solver.m_lumped_vortex import LumpedVortex
 
 # * ################# Stuff to get the 0015 reference data ####################
 DATA_DIR = Path(__file__).parent / "reference_data"
