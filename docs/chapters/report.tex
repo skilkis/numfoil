@@ -220,11 +220,11 @@ representing the Kutta-condition.
 The velocity potential, $\phi$, in a collocation point at $(x_i,\: y_i)$ due
 to $n-1$ vortices located at $(x_j, \: y_j)$ is obtained using
 \autoref{eq:phi_thick}.
-When capital letters are used, $(X_j, \: Y_j)$ represent the panel's leading edge
-node, and $(X_{j+1}, \: Y_{j+1})$ refer to the panel's trailing edge node.
-Substituting \autoref{eq:phi_thick} in \autoref{eq:thick_cond} and applying it
-to every collocation point present will yield a system of $n$ equations which
-can be solved for the vorticities $\gamma_j$.
+% When capital letters are used, $(X_j, \: Y_j)$ represent the panel's leading edge
+% node, and $(X_{j+1}, \: Y_{j+1})$ refer to the panel's trailing edge node.
+% Substituting \autoref{eq:phi_thick} in \autoref{eq:thick_cond} and applying it
+% to every collocation point present will yield a system of $n$ equations which
+% can be solved for the vorticities $\gamma_j$.
 
 
 \begin{equation}
@@ -261,13 +261,22 @@ can be solved for the vorticities $\gamma_j$.
 % \citeauthor{kuethe_chow_1998}\cite{kuethe_chow_1998} adds an equation, where the
 % Kutta condition is altered as shown in \autoref{eq:kutta2}. Either way results
 % in again an equal amount of equations and unknowns.
-\citeauthor{kuethe_chow_1998}\cite{kuethe_chow_1998}
 
 
 \begin{equation}
   \label{eq:kutta2}
       \gamma_1 + \gamma_{n+1} = 0
+\end{equation}
+
+Finally, \cref{eq:vind_thick} can be used to determine the induced velocity on a
+panel due to all vortices present on the surface panels. How to solve these
+equations is explained by \citeauthor{kuethe_chow_1998}\cite{kuethe_chow_1998}
+by splitting up and replacing large and complex equations with multiple coefficients.
+\begin{equation}
+  \label{eq:vind_thick}
+  V_{i}=\cos \left(\theta_{i}-\alpha\right)+\sum_{j=1}^{m+1} A_{i j} \gamma_{j}^{\prime}
   \end{equation}
+
 
 Once the vorticity $\gamma_j$ is known for each vortex element, the change in
 lift and pressure are obtained using \autoref{eq:thick_lift} and
@@ -280,7 +289,7 @@ lift and pressure are obtained using \autoref{eq:thick_lift} and
 \medskip
 \begin{equation}
 \label{eq:thick_press}
-\Delta Cp = 1 - \left( \cos{\alpha+\alpha_i} + \frac{ \gamma_{j=i} }{ 2 v_\infty } \right)
+\Delta Cp = 1 - v_i^2
 \end{equation}
 \medskip
 
