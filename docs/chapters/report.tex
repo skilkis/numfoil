@@ -1,5 +1,5 @@
 \newcommand{\numfoil}{$\boldsymbol{\Gamma}$\textbf{py}\ }
-\chapter{Problem description}
+\chapter{Problem Description}
 To get a preliminary estimation of an airfoil's performance, numerical methods
 can be used which represent the airfoil as a series of flat, zero-thickness,
 panels. Various kinds of singularities can then be placed on those panels to
@@ -30,8 +30,21 @@ for each of the two methods in the following sections.
 % \end{figure}
 
 \chapter{\numfoil Implementation}
-
-\blindtext
+For this assignment, the goal was to both learn more about potential flow
+theory while simultaneously creating a high-performance Python framework,
+making use of JIT compilation for parallelization, to make use of modern
+hardware while representing multiple airfoil discretizations ranging from thin
+airfoils to also thick paneling methods. The object-oriented paradigm, along
+with SOLID architecting principles was applied to create abstractions that
+could be specialized per type of potential flow solver. Doing so allowed
+minimal code duplication between each panel method, and resulted in the
+development of what was initially deemed \numfoil, but due to a naming conflict
+has become the \textsf{numfoil} package
+\footnote{\url{https://github.com/skilkis/numfoil}} which is publically
+available. Open sourcing the tool helps future students understand the theory
+given within textbooks from a clean-code perspective, which was not previously
+possible due to the scripting implementations provided with textbooks being
+void of information due to usage of obscure variable names.
 
 \section{Software Architecture \& Flow Diagram}
 \begin{wrapfigure}{R}[2em]{0.45\textwidth}
@@ -107,7 +120,7 @@ increase accuracy of the results at the leading and trailing edge.
 \begin{figure}[H]
 \centering
 \includegraphics[width=.8\textwidth]{static/disc_camber.png}
-\caption{Discritization of the airfoil camber line using $n=7$ flat panels\cite{katz_plotkin}}
+\caption{Discritization of the airfoil camber line using $n=7$ panels \cite{katz_plotkin}}
 \label{fig:discr_thin}
 \end{figure}
 
