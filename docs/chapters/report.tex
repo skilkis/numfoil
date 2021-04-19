@@ -145,9 +145,12 @@ panel.
 
 Next, if $\left( x_i, \: y_i \right)$ is the location of the $i-$th panel
 collocation point, and $\left( x_j, \: y_j \right)$ is the location of the
-$j-$th vortex element, the velocity induced at each collocation point due to the
-presence of the $n$ vortices, with strength $\Gamma_j$, is found using
-\autoref{eq:v_ind_thin}.
+$j-$th vortex element, the velocity induced at each collocation point due to
+the presence of the $n$ vortices, with strength $\Gamma_j$, is found using
+\autoref{eq:v_ind_thin}. Note that an error exists within the textbook, as to
+represent a correct induced velocity due to the $j-$th vortex element which are
+clock-wise rotating, a clock-wise affine transform must be used. Originally, a
+counter-clockwise affine transform is provided in \cite{katz_plotkin}.
 \medskip
 
 \begin{equation}
@@ -159,7 +162,7 @@ presence of the $n$ vortices, with strength $\Gamma_j$, is found using
     \sum_{j=1}^{n} \:
     \left[ \frac{\Gamma_{j}}{2 \pi r_{i,j}^{2}}
     \left(\begin{array}{cc}
-    0 & 1 \\ -1 & 0
+    0 & -1 \\ 1 & 0
     \end{array}\right)
     \left(\begin{array}{l}
     x_i-x_{j} \\ z_i-z_{j}
