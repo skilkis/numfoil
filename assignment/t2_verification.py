@@ -1,7 +1,5 @@
 """Task 2: Verification with a thin NACA Airfoil."""
 
-import csv
-from math import pi
 from pathlib import Path
 from typing import Dict, Generator, List, Sequence
 
@@ -9,29 +7,16 @@ import numpy as np
 import xfoil
 from matplotlib import pyplot as plt
 
-from numfoil.geometry.airfoil import NACA4Airfoil
-from numfoil.legacy.panel.thick import Solver, ThickPanelledAirfoil
+from numfoil.geometry import NACA4Airfoil
+from numfoil.geometry.airfoil import ParabolicCamberAirfoil
 from numfoil.solver.m_linear_vortex import LinearVortex
+from numfoil.solver.m_constant_vortex import ConstantVortex
 
-# from xfoil import find_pressure_coefficients
+from numfoil.solver.m_lumped_vortex import LumpedVortex
 
-# alpha = 1
-# values1 = find_pressure_coefficients("naca0016", alpha, delete=True)
-# values2 = find_pressure_coefficients("naca0012", alpha, delete=True)
-
-# plt.style.use("ggplot")
-# plot = plt.plot(values1["x"], values1["Cp"], label="NACA-0016")
-# plt.plot(values2["x"], values2["Cp"], label="NACA-0012")
-# plt.xlabel("Chord Fraction (x/c)")
-# plt.ylabel("Pressure Coefficient [-]")
-# plt.title(r"NACA Airfoils at $\alpha={alpha}$".format(alpha=alpha))
-# plt.legend(loc="best")
-# plt.gca().invert_yaxis()
-# plt.show()
-
-
+# * ################# Stuff to get the 0015 reference data ####################
 DATA_DIR = Path(__file__).parent / "reference_data"
-
+FIGURE_DIR = Path(__file__).parent.parent / "docs" / "static"
 
 def splitby(sequence: Sequence, n: int) -> Generator[Sequence, None, None]:
     """Split a ``sequence`` into chunks of size ``n``."""
@@ -58,7 +43,6 @@ def parse_naca0015_table(
                 table[key].append(float(value))
     return table
 
-
 naca0015_data = parse_naca0015_table()
 
 # Temporary plot of assignment NACA0015 table data
@@ -71,113 +55,65 @@ ax.set_title(r"NACA0015 at $\alpha=5$ [deg]")
 plt.show()
 
 
-def get_xfoil_cp(nacafoil):
-    with open(DATA_DIR / f"{nacafoil}.txt", "r") as f:
-        reader = csv.reader(f, skipinitialspace=True, delimiter=" ")
-        Cp = np.array([[0, 0]])
-        for i in range(3):
-            next(reader)
-        for row in reader:
-            Cp = np.append(Cp, [[float(row[0]), float(row[2])]], axis=0)
-    return np.delete(Cp, 0, 0)
+# * ################# plotkin verification funciton ###########################
+
+print('Question 2:')
+def delta_cp_plotkin(
+    x: np.ndarray, alpha: float, eta: float, c: float = 1.0
+) -> np.ndarray:
+    """Exact analytical pressure coefficient for a parabolic airfoil."""
+    return 4 * np.sqrt((c - x) / x) * np.radians(
+        alpha
+    ) + 32 * eta / c * np.sqrt((xc := (x / c)) * (1 - xc))
 
 
-def get_data(Naca="0012", alpha=0):
-    foil = ThickPanelledAirfoil(Naca=Naca, n_panels=100)
-    # foil.panels.plt()
-    solver = Solver(foil.panels)
-    Cp = solver.solve_Cp(alpha=alpha, plot=False)
-    Cl = solver.get_cl(alpha=alpha)
-    return Cp, Cl, foil
+for eta, alpha in [(0.1, 5), (0.3, 10)]:
+# eta = 0.1
+# alpha = 10
+    solution = LumpedVortex(
+        airfoil=ParabolicCamberAirfoil(eta=0.1), n_panels=20, spacing="linear",
+        ).solve_for(alpha=alpha)
+    fig, ax = solution.plot_delta_cp()
+    x = np.linspace(0, 1, 1000)[1:]
+    ax.plot(x, delta_cp_plotkin(x, alpha=alpha, eta=0.1), label="Exact Solution")
+    ax.set_ylim([0, 5])
+    ax.legend(loc="best")
+    plt.show()
+    fig.savefig(FIGURE_DIR / "thin_airfoil_verification.pdf", bbox_inches="tight")
+
+    print(f"Thin Lift Coefficient = {solution.lift_coefficient}")
+
+# * ###########################################################################
 
 
-# * ### create xfoil data ###
-# import xfoil
-# alfas = [0,3,5,8,10,13,15]
-# xfoil.call(NACA=True, airfoil='naca0012', alfas=alfas, output='Polar')
-# xfoil.call(NACA=True, airfoil='naca4412', alfas=alfas, output='Polar')
+# * verification of the thick method
+for naca_code, alpha in [("naca0015", 5), ("naca2422", 10)]:
+    solution = LinearVortex(
+        airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
+    ).solve_for(alpha=alpha)
+    fig, ax = solution.plot_pressure_distribution()
 
-xfoil_0012 = xfoil.find_pressure_coefficients("naca0012", alpha=3, delete=True)
-
-# * ### verification Cp ###
-Cp1, cl1, foil1 = get_data(Naca="0012", alpha=3)
-fig, ax = plt.subplots()
-ax.plot(
-    [i[0] for i in foil1.panels.collocation_points], Cp1, "k", label="NumFoil"
-)
-ax.plot(xfoil_0012["x"], xfoil_0012["Cp"], "xr", markevery=5, label="XFOIL")
-ax.invert_yaxis()
-ax.set_ylabel(r"$C_p$")
-ax.set_xlabel("x/c")
-plt.legend(loc="best")
-plt.show()
-plt.style.use("ggplot")
-
-# * ### verification Cl ###
+    xfoil_data = xfoil.find_pressure_coefficients(naca_code, alpha=alpha, delete=True)
+    ax.plot(xfoil_data["x"], xfoil_data["Cp"], "xk", markevery=5, label="XFOIL")
+    ax.legend()
+    ax.legend(loc='best')
+    fig.savefig(FIGURE_DIR / f"thick_verif_{naca_code}_alpha{alpha}.pdf", bbox_inches="tight")
 
 
-def get_xfoil_cl(airfoil, alphas):
-    return [
-        xfoil.find_coefficients("naca0012", alpha=alpha, delete=True)["CL"]
-        for alpha in alphas
-    ]
 
+# * compare symm vs camber
 
-alfas = [0, 3, 5, 8, 10, 13, 15]
+# print('Question 3:')
 
+# naca_code = '0015'
+# alpha = 5
+# solution = LumpedVortex(
+#     airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
+# ).solve_for(alpha=alpha)
+# # fig, ax = solution.plot_lift_gradient()
 
-def get_cls(naca):
-    cl = []
-    for a in alfas:
-        _, Cl, _ = get_data(Naca=naca, alpha=a)
-        cl.append(Cl)
-    return np.reshape(cl, (len(alfas), 1))
-
-
-cl0012 = get_cls("0012")
-cl4412 = get_cls("4412")
-
-cl0012_xfoil = get_xfoil_cl("naca0012", alfas)
-cl4412_xfoil = get_xfoil_cl("naca4412", alfas)
-
-
-fig, ax = plt.subplots()
-ax.plot(alfas, cl0012_xfoil, "k", label=" Xfoil")
-ax.plot(alfas, cl0012, "b", label=" NumFoil")
-# ax.plot(*zip(*cl4412_xfoil), "g", label="NACA4412 Xfoil")
-# ax.plot([i[0] for i in cl4412_xfoil], cl4412, "r", label="NACA4412 NumFoil")
-ax.set_ylabel(r"$C_l$")
-ax.set_xlabel(r"$\alpha$")
-plt.legend(loc="best")
-plt.show()
-plt.style.use("ggplot")
-
-fig, ax = plt.subplots()
-ax.plot(alfas, cl4412_xfoil, "g", label=" Xfoil")
-ax.plot(alfas, cl4412, "r", label=" NumFoil")
-ax.set_ylabel(r"$C_l$")
-ax.set_xlabel(r"$\alpha$")
-plt.legend(loc="best")
-plt.show()
-plt.style.use("ggplot")
-
-clax1 = (cl0012_xfoil[1] - cl0012_xfoil[0]) / (3 * pi / 180)
-print(clax1)
-
-# Verification of new Linear Vortex Panel Method code
-naca_code = "naca0012"
-alpha = 8
-solution = LinearVortex(
-    airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
-).solve_for(alpha=alpha)
-
-xfoil_result = xfoil.find_pressure_coefficients(naca_code, alpha, delete=True)
-fig, ax = solution.plot_pressure_distribution()
-ax.scatter(
-    xfoil_result["x"],
-    xfoil_result["Cp"],
-    marker=".",
-    color="black",
-    label="XFOIL",
-)
-ax.legend(loc="best")
+# xfoil_data = xfoil.find_pressure_coefficients(naca_code, alpha=alpha, delete=True)
+# ax.plot(xfoil_data["x"], xfoil_data["Cp"], "xk", markevery=5, label="XFOIL")
+# ax.legend()
+# ax.legend(loc='best')
+# fig.savefig(FIGURE_DIR / f"thick_camber_{naca_code}_alpha{alpha}.pdf", bbox_inches="tight")

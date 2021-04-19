@@ -183,85 +183,93 @@ same airfoil. Both the reference plot and obtained plot are shown in \autoref{fi
 % ###########################################################################################
 % ###########################################################################################
 
-\section{Panelled Airfoil Surface}
+\section{Linear Vortex Model - Paneled Airfoil Surface}
 \label{sec:thick}
-The second method, described by \citeauthor{katz_plotkin}\cite{katz_plotkin},
-and \citeauthor{kuethe_chow_1998}\cite{kuethe_chow_1998}, places constant vortex
-elements on in the center of panels on the airfoils surface. The airfoil is
-discritized by placing $n$ nodes on the airfoil starting at the trailing edge,
-over the lower airfoil surface to the leading edge and back to the trailing edge
-over the upper surface. Each node presents a panel edge, so there are $n$
-panels. The same naming scheme as used in \autoref{sec:thin} applies here too.
-Note that the method is explained using the equations from
-\citeauthor{katz_plotkin}\cite{katz_plotkin}, as it is easier to see what they
-represent than the version from
-\citeauthor{kuethe_chow_1998}\cite{kuethe_chow_1998}, which breaks everything
-down in coefficients. The code, however, implements the coefficient equations
-from \citeauthor{kuethe_chow_1998}\cite{kuethe_chow_1998} as they are slightly
-easier to implement.
-
+The second method, described by %\citeauthor{katz_plotkin}\cite{katz_plotkin},
+\citeauthor{kuethe_chow_1998}\cite{kuethe_chow_1998}, places vortex elements
+with linearly increasing strength in the center of panels on the airfoils
+surface. The airfoil is discretized by placing $n$ nodes on the airfoil starting
+at the trailing edge, over the lower airfoil surface to the leading edge and
+back to the trailing edge over the upper surface. Each node presents a panel
+edge, so there are $n-1$ panels. The same naming scheme as used in
+\autoref{sec:thin} applies here too.
 
 \subsection{Equations}
 \label{ssec:eq_thick}
-The boundary condition in this case states that the inner tangential velocity
-must be zero, as described by \autoref{eq:thick_cond}\cite{katz_plotkin}.
-Naturally there can be no airflow inside the airfoil itself. Alternatively, also
-the zero normal flow boundary condition could here be used again
-\cite{kuethe_chow_1998}. The Kutta-condition, shown in \autoref{eq:kutta}, is
-added to ensure smooth flow transition to freestream at the trailing adge.
-
+The boundary condition states that the normal velocity on the panels
+must be zero, as described by \autoref{eq:thick_cond}\cite{kuethe_chow_1998}.
+The Kutta-condition, shown in \autoref{eq:kutta}, is
+added to ensure smooth flow transition to freestream at the trailing edge. This
+results in one extra collocation point at the trailing edge, meaning that while
+there are only $n-1$ panels, there are $n$ collocation points, the $n$-th one
+representing the Kutta-condition.
 \begin{equation}
-\label{eq:thick_cond}
-    \left( U_\infty + u_i, \: W_\infty + w_i \right) \cdot \left( \cos \alpha_i,
-    \: -\sin \alpha_i \right) = 0
-\end{equation}
+  \label{eq:thick_cond}
+  \frac{\partial}{\partial n_{i}} \phi\left(x_{i}, y_{i}\right)=0
+  \end{equation}
+% \begin{equation}
+% \label{eq:thick_cond}
+%     \left( U_\infty + u_i, \: W_\infty + w_i \right) \cdot \left( \cos \alpha_i,
+%     \: -\sin \alpha_i \right) = 0
+% \end{equation}
 \begin{equation}
   \label{eq:kutta}
       \gamma_1 + \gamma_{n} = 0
 \end{equation}
 
-The induced velocity, $\gamma_j$, in a collocation point at $(x_i,\: y_i)$ due
-to $n$ vortices located at $(x_j, \: y_j)$ is obtained using
-\autoref{eq:v_ind_thick}. Here $(x_j, \: y_j)$ is also the panel's leading edge
-node, so $(x_{j+1}, \: y_{j+1})$ refer to the panel's trailing edge node.
-Substituting \autoref{eq:v_ind_thick} in \autoref{eq:thick_cond} and applying it
+The velocity potential, $\phi$, in a collocation point at $(x_i,\: y_i)$ due
+to $n-1$ vortices located at $(x_j, \: y_j)$ is obtained using
+\autoref{eq:phi_thick}.
+When capital letters are used, $(X_j, \: Y_j)$ represent the panel's leading edge
+node, and $(X_{j+1}, \: Y_{j+1})$ refer to the panel's trailing edge node.
+Substituting \autoref{eq:phi_thick} in \autoref{eq:thick_cond} and applying it
 to every collocation point present will yield a system of $n$ equations which
 can be solved for the vorticities $\gamma_j$.
 
+
 \begin{equation}
-\label{eq:v_ind_thick}
-    \left(\begin{array}{l}
-    u_{p_i} \\ w_{p_i}
-    \end{array}\right)
-    =
-    \sum_{j=1}^{n} \:
-    \left(\begin{array}{c}
-    \frac{\gamma_j}{2\pi}\left[ \tan^{-1} \left(
-        \frac{z_i - z_{j+1}}{x_i - x_{j+1}}\right)
-         - \tan^{-1} \left( \frac{z_i - z_j}{x_i - x_j}\right) \right] \\[1em]
-    -\frac{\gamma_j}{4\pi} \ln \left[ \frac{\left( x_i - x_j \right)^2 +
-    \left( z_i - z_j \right)^2}{\left( x_i - x_{j+1}\right)^2 +
-    \left( z_i - z_{j+1} \right)^2 }  \right]
-    \end{array}\right), \; \; \; \; \; \forall \; i \in \{1,...,n\}
-\end{equation}
+  \label{eq:phi_thick}
+    \phi\left(x_{i}, y_{i}\right)=V_{\infty}\left(x_{i} \cos \alpha+y_{i} \sin \alpha\right)-\sum_{j=1}^{m} \int_{j} \frac{\gamma\left(s_{j}\right)}{2 \pi} \tan ^{-1}\left(\frac{y_{i}-y_{j}}{x_{i}-x_{j}}\right) d s_{j}
+  \end{equation}
+  \begin{equation}
+    \gamma\left(s_{j}\right)=\gamma_{j}+\left(\gamma_{j+1}-\gamma_{j}\right) \frac{s_{j}}{S_{j}}
+    \end{equation}
+% \begin{equation}
+% \label{eq:v_ind_thick}
+%     \left(\begin{array}{l}
+%     u_{p_i} \\ w_{p_i}
+%     \end{array}\right)
+%     =
+%     \sum_{j=1}^{n} \:
+%     \left(\begin{array}{c}
+%     \frac{\gamma_j}{2\pi}\left[ \tan^{-1} \left(
+%         \frac{z_i - z_{j+1}}{x_i - x_{j+1}}\right)
+%          - \tan^{-1} \left( \frac{z_i - z_j}{x_i - x_j}\right) \right] \\[1em]
+%     -\frac{\gamma_j}{4\pi} \ln \left[ \frac{\left( x_i - x_j \right)^2 +
+%     \left( z_i - z_j \right)^2}{\left( x_i - x_{j+1}\right)^2 +
+%     \left( z_i - z_{j+1} \right)^2 }  \right]
+%     \end{array}\right), \; \; \; \; \; \forall \; i \in \{1,...,n\}
+% \end{equation}
 \medskip
 
-Once that the results of \autoref{eq:v_ind_thick} are in the local panel
-coordinate system and must be transformed back to the global one. Adding
-\autoref{eq:kutta} to the system of equations obtained from
-\autoref{eq:v_ind_thick}, will result in n+1 equations.
-\citeauthor{katz_plotkin}\cite{katz_plotkin} deals with this by replacing an
-arbetrary equation from the system with the Kutta condition, while
-\citeauthor{kuethe_chow_1998}\cite{kuethe_chow_1998} adds an equation, where the
-Kutta condition is altered as shown in \autoref{eq:kutta2}. Either way results
-in again an equal amount of equations and unknowns.
+% Once that the results of \autoref{eq:v_ind_thick} are in the local panel
+% coordinate system and must be transformed back to the global one. Adding
+% \autoref{eq:kutta} to the system of equations obtained from
+% \autoref{eq:v_ind_thick}, will result in n+1 equations.
+% \citeauthor{katz_plotkin}\cite{katz_plotkin} deals with this by replacing an
+% arbitrary equation from the system with the Kutta condition, while
+% \citeauthor{kuethe_chow_1998}\cite{kuethe_chow_1998} adds an equation, where the
+% Kutta condition is altered as shown in \autoref{eq:kutta2}. Either way results
+% in again an equal amount of equations and unknowns.
+\citeauthor{kuethe_chow_1998}\cite{kuethe_chow_1998}
+
 
 \begin{equation}
   \label{eq:kutta2}
       \gamma_1 + \gamma_{n+1} = 0
   \end{equation}
 
-Once the vorticity $\gamma_j$ is know for each vortex element, the change in
+Once the vorticity $\gamma_j$ is known for each vortex element, the change in
 lift and pressure are obtained using \autoref{eq:thick_lift} and
 \autoref{eq:thick_press} respectively.
 
@@ -280,8 +288,8 @@ To facilitate the implementation of \autoref{eq:v_ind_thick}, the coefficient
 breakdown version by \citeauthor{kuethe_chow_1998} was used in the actual code
 for this problem.
 
-\subsection{verification}
-The constant vortex method with panelled airfoil surface is validated with data
+\subsection{Verification}
+The linear vortex method with paneled airfoil surface is validated with data
 obtained from XFOIL\cite{xfoil}. The pressure distribution found for the
 NACA4412 airfoil is shown in \autoref{fig:thick_verif}.
 \autoref{fig:thick_verif1} and \autoref{fig:thick_verif2} show the results for
@@ -291,7 +299,7 @@ angle of attack, where the calculated pressure coefficient near the leading edge
 on the bottom surface is slightly higher compared to the reference data. A
 second verification was performed, results from which are plotted in
 \autoref{fig:thick_verif3}, his time using the NACA0012 airfoil. Again, the
-only descripencies are at the leading edge, where the program slightly
+only discrepancies are at the leading edge, where the program slightly
 underestimates the underpressure on the top surface. Note that
 \autoref{fig:thick_verif4} shows the pressure distribution over the NACA0012
 airfoil at 3 degrees angle of attack (instead of zero degrees like in
@@ -302,37 +310,20 @@ has equal pressure on top and bottom surfaces, resulting in a simple line plot.
     \centering
     \begin{subfigure}{.5\textwidth}
       \centering
-      \includegraphics[width=.9\linewidth]{static/naca4412_0_verif_thick.png}
-      \caption{Pressure distribution NACA4412 at $\alpha = 0^{\circ}$}
+      \includegraphics[width=.9\linewidth]{static/thick_verif_naca0015_alpha5.pdf}
+      \caption{Pressure distribution NACA0015 at $\alpha = 5^{\circ}$}
       \label{fig:thick_verif1}
     \end{subfigure}%
     \begin{subfigure}{.5\textwidth}
       \centering
-      \includegraphics[width=.9\linewidth]{static/naca4412_verif_thick.png}
-      \caption{Pressure distribution NACA4412 at $\alpha = 10^{\circ}$}
+      \includegraphics[width=.9\linewidth]{static/thick_verif_naca2422_alpha10.pdf}
+      \caption{Pressure distribution NACA2422 at $\alpha = 10^{\circ}$}
       \label{fig:thick_verif2}
     \end{subfigure}
-    \caption{\centering Validation of panelled airfoil method results for NACA4412 with XFOIL\cite{xfoil}}
+    \caption{\centering Validation of linear vortex method results with XFOIL\cite{xfoil}}
     \label{fig:thick_verif}
 \end{figure}
 
-\begin{figure}[h]
-    \centering
-    \begin{subfigure}{.5\textwidth}
-      \centering
-      \includegraphics[width=.9\linewidth]{static/naca0012_0_verif_thick.png}
-      \caption{Pressure distribution NACA0012 at $\alpha = 3^{\circ}$}
-      \label{fig:thick_verif4}
-    \end{subfigure}%
-    \begin{subfigure}{.5\textwidth}
-      \centering
-      \includegraphics[width=.9\linewidth]{static/naca0012_verif_thick.png}
-      \caption{Pressure distribution NACA0012 at $\alpha = 10^{\circ}$}
-      \label{fig:thick_verif5}
-    \end{subfigure}
-    \caption{\centering Validation of panelled airfoil method results for NACA0012 with XFOIL\cite{xfoil}}
-    \label{fig:thick_verif3}
-\end{figure}
 
 Looking at the resulting estimation for $C_l$, shown in \autoref{tab:cl_thick},
 it can be seen that the calculated values for the lift coefficient are slightly
