@@ -10,8 +10,6 @@ from matplotlib import pyplot as plt
 from numfoil.geometry import NACA4Airfoil
 from numfoil.geometry.airfoil import ParabolicCamberAirfoil
 from numfoil.solver.m_linear_vortex import LinearVortex
-from numfoil.solver.m_constant_vortex import ConstantVortex
-
 from numfoil.solver.m_lumped_vortex import LumpedVortex
 
 # * ################# Stuff to get the 0015 reference data ####################
@@ -66,6 +64,13 @@ def delta_cp_plotkin(
         alpha
     ) + 32 * eta / c * np.sqrt((xc := (x / c)) * (1 - xc))
 
+def delta_cp_plotkin(
+    x: np.ndarray, alpha: float, eta: float, c: float = 1.0
+) -> np.ndarray:
+    """Exact analytical pressure coefficient for a parabolic airfoil."""
+    return 4 * np.sqrt((c - x) / x) * np.radians(
+        alpha
+    ) + 32 * eta / c * np.sqrt((xc := (x / c)) * (1 - xc))
 
 for eta, alpha in [(0.1, 5), (0.3, 10)]:
 # eta = 0.1
@@ -81,12 +86,26 @@ for eta, alpha in [(0.1, 5), (0.3, 10)]:
     plt.show()
     fig.savefig(FIGURE_DIR / "thin_airfoil_verification.pdf", bbox_inches="tight")
 
-    print(f"Thin Lift Coefficient = {solution.lift_coefficient}")
+eta = 0.1
+alpha = 10
+solution = LumpedVortex(
+    airfoil=ParabolicCamberAirfoil(eta=0.1), n_panels=20, spacing="linear",
+).solve_for(alpha=alpha)
+fig, ax = solution.plot_delta_cp()
+x = np.linspace(0, 1, 1000)[1:]
+ax.plot(x, delta_cp_plotkin(x, alpha=alpha, eta=0.1), label="Exact Solution")
+ax.set_ylim([0, 5])
+ax.legend(loc="best")
+plt.show()
+fig.savefig(FIGURE_DIR / "thin_airfoil_verification.pdf", bbox_inches="tight")
+
+print(f"Thin Lift Coefficient = {solution.lift_coefficient}")
 
 # * ###########################################################################
 
 
 # * verification of the thick method
+print('Question 2:')
 for naca_code, alpha in [("naca0015", 5), ("naca2422", 10)]:
     solution = LinearVortex(
         airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
@@ -98,12 +117,6 @@ for naca_code, alpha in [("naca0015", 5), ("naca2422", 10)]:
     ax.legend()
     ax.legend(loc='best')
     fig.savefig(FIGURE_DIR / f"thick_verif_{naca_code}_alpha{alpha}.pdf", bbox_inches="tight")
-
-
-
-# * compare symm vs camber
-
-# print('Question 3:')
 
 # naca_code = '0015'
 # alpha = 5
@@ -117,3 +130,20 @@ for naca_code, alpha in [("naca0015", 5), ("naca2422", 10)]:
 # ax.legend()
 # ax.legend(loc='best')
 # fig.savefig(FIGURE_DIR / f"thick_camber_{naca_code}_alpha{alpha}.pdf", bbox_inches="tight")
+
+# * compare symm vs camber
+
+print('Question 3:')
+
+naca_code = '0015'
+alpha = 5
+solution = LumpedVortex(
+    airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
+).solve_for(alpha=alpha)
+fig, ax = solution.plot_lift_gradient()
+
+xfoil_data = xfoil.find_pressure_coefficients(naca_code, alpha=alpha, delete=True)
+ax.plot(xfoil_data["x"], xfoil_data["Cp"], "xk", markevery=5, label="XFOIL")
+ax.legend()
+ax.legend(loc='best')
+fig.savefig(FIGURE_DIR / f"thick_camber_{naca_code}_alpha{alpha}.pdf", bbox_inches="tight")

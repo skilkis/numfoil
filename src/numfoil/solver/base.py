@@ -14,6 +14,8 @@
 
 """Contains definitions used to define a panel method solver."""
 
+from __future__ import annotations
+
 import math
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
@@ -71,7 +73,7 @@ class FlowSolution(metaclass=ABCMeta):
 
     def __init__(
         self,
-        method: object,
+        method: PanelMethod,
         circulations: np.ndarray,
         alpha: Union[float, Sequence[float]],
     ):
@@ -85,6 +87,17 @@ class FlowSolution(metaclass=ABCMeta):
         """Difference of lower and upper surface pressure coefficients.
 
         Explicitely this is DeltaCp = Cp_lower - Cp_upper.
+        """
+
+    @property
+    @abstractmethod
+    def delta_locations(self) -> np.ndarray:
+        """Chord-line (x) locations corresponding to difference values.
+
+        Note:
+            This property is useful to allow specialized classes
+            to override at which location they specify values that
+            involve quantities involving differences.
         """
 
     @property
@@ -120,14 +133,15 @@ class FlowSolution(metaclass=ABCMeta):
         # Determines which alpha to plot if ``alpha`` is specified
         for idx, a in self.enumerate_alpha(alpha):
             ax.plot(
-                self.method.panels.points_at(0.5).x,
+                self.delta_locations,
                 self.delta_pressure_coefficients[:, idx],
                 marker=".",
                 label=f"$\\alpha = {a}$",
             )
         ax.legend(loc="best")
-        ax.set_xlabel("Normalized Location Along the Chordline [-]")
+        ax.set_xlabel("Normalized Location Along the Chordline $\\frac{x}{c}$")
         ax.set_ylabel("Pressure Coefficient Difference $\\Delta C_P$")
+        return fig, ax
 
     def plot_pressure_distribution(self, alpha: Optional[float] = None):
         fig, ax = plt.subplots()
@@ -188,12 +202,17 @@ class ThinFlowSolution(FlowSolution):
     """Interprets thin airfoil theory panel method results."""
 
     @cached_property
-    def delta_pressure_coefficients(self):
+    def delta_pressure_coefficients(self) -> np.ndarray:
         """Pressure coefficient change across each panel."""
         return 2 * self.circulations / self.method.panels.lengths
 
     @cached_property
-    def pressure_coefficients(self):
+    def delta_locations(self) -> np.ndarray:
+        """Chord-locations of the delta pressure coefficients."""
+        return self.method.panels.points_at(0.5).x
+
+    @cached_property
+    def pressure_coefficients(self) -> np.ndarray:
         """Pressure coefficient measured on each panel."""
         return -self.delta_pressure_coefficients
 
@@ -208,6 +227,20 @@ class ThinFlowSolution(FlowSolution):
 # final physical properties
 class ThickFlowSolution(FlowSolution):
     """Interprets arbitrary thickness surface panel method results."""
+
+    @cached_property
+    def delta_pressure_coefficients(self) -> np.ndarray:
+        cp = self.pressure_coefficients
+        n_panels = self.method.panels.n_panels
+        cp_bot = cp[(n_panels // 2) - 1 :: -1]
+        cp_top = cp[n_panels // 2 :]
+        return cp_bot - cp_top
+
+    @cached_property
+    def delta_locations(self) -> np.ndarray:
+        """Selects top-surface panel midpoints for delta cp."""
+        locations = (panels := self.method.panels).points_at(0.5)
+        return locations[panels.n_panels // 2 :].x
 
     @cached_property
     def flow_direction(self) -> Vector2D:
@@ -367,7 +400,9 @@ class PanelMethod(metaclass=ABCMeta):
         return FlowSolution
 
     def solve_for(
-        self, alpha: Union[float, Sequence[float]], plot: bool = False,
+        self,
+        alpha: Union[float, Sequence[float]],
+        plot: bool = False,
     ) -> FlowSolution:
         """Calculates a flow solution for the provided ``alpha``."""
         return self.solution_class(
