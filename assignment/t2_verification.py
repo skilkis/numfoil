@@ -84,7 +84,7 @@ for eta, alpha in [(0.1, 5), (0.3, 10)]:
     ax.set_ylim([0, 5])
     ax.legend(loc="best")
     plt.show()
-    fig.savefig(FIGURE_DIR / "thin_airfoil_verification.pdf", bbox_inches="tight")
+    # fig.savefig(FIGURE_DIR / "thin_airfoil_verification.pdf", bbox_inches="tight")
 
 eta = 0.1
 alpha = 10
@@ -97,7 +97,7 @@ ax.plot(x, delta_cp_plotkin(x, alpha=alpha, eta=0.1), label="Exact Solution")
 ax.set_ylim([0, 5])
 ax.legend(loc="best")
 plt.show()
-fig.savefig(FIGURE_DIR / "thin_airfoil_verification.pdf", bbox_inches="tight")
+# fig.savefig(FIGURE_DIR / "thin_airfoil_verification.pdf", bbox_inches="tight")
 
 print(f"Thin Lift Coefficient = {solution.lift_coefficient}")
 
@@ -105,6 +105,7 @@ print(f"Thin Lift Coefficient = {solution.lift_coefficient}")
 
 
 # * verification of the thick method
+
 print('Question 2:')
 for naca_code, alpha in [("naca0015", 5), ("naca2422", 10)]:
     solution = LinearVortex(
@@ -116,14 +117,30 @@ for naca_code, alpha in [("naca0015", 5), ("naca2422", 10)]:
     ax.plot(xfoil_data["x"], xfoil_data["Cp"], "xk", markevery=5, label="XFOIL")
     ax.legend()
     ax.legend(loc='best')
-    fig.savefig(FIGURE_DIR / f"thick_verif_{naca_code}_alpha{alpha}.pdf", bbox_inches="tight")
+    # fig.savefig(FIGURE_DIR / f"thick_verif_{naca_code}_alpha{alpha}.pdf",
+    # bbox_inches="tight")
+    print(f"Lift Coefficient {naca_code} at {alpha} degrees is {solution.lift_coefficient}")
 
-# naca_code = '0015'
-# alpha = 5
+for naca_code in ["naca0015", "naca2422"]:
+    cl = []
+    for alpha in [3, 7]:
+        solution = LinearVortex(
+                airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
+            ).solve_for(alpha=alpha)
+        cl.append(solution.lift_coefficient)
+    print(f"lift gradient Cla {naca_code} = {(cl[1] - cl[0])/4}")
+
+for naca_code in ["naca0015", "naca2422"]:
+    for alpha in [0, 3, 5, 8, 10, 13]:
+        solution = LinearVortex(
+                airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
+            ).solve_for(alpha=alpha)
+        print(f"Lift Coefficient {naca_code} at {alpha} degrees is {solution.lift_coefficient}")
+
 # solution = LumpedVortex(
 #     airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
 # ).solve_for(alpha=alpha)
-# # fig, ax = solution.plot_lift_gradient()
+# fig, ax = solution.plot_lift_gradient()
 
 # xfoil_data = xfoil.find_pressure_coefficients(naca_code, alpha=alpha, delete=True)
 # ax.plot(xfoil_data["x"], xfoil_data["Cp"], "xk", markevery=5, label="XFOIL")
@@ -133,17 +150,17 @@ for naca_code, alpha in [("naca0015", 5), ("naca2422", 10)]:
 
 # * compare symm vs camber
 
-print('Question 3:')
+# print('Question 3:')
 
-naca_code = '0015'
-alpha = 5
-solution = LumpedVortex(
-    airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
-).solve_for(alpha=alpha)
-fig, ax = solution.plot_lift_gradient()
+# naca_code = '0015'
+# alpha = 5
+# solution = LumpedVortex(
+#     airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
+# ).solve_for(alpha=alpha)
+# fig, ax = solution.plot_lift_gradient()
 
-xfoil_data = xfoil.find_pressure_coefficients(naca_code, alpha=alpha, delete=True)
-ax.plot(xfoil_data["x"], xfoil_data["Cp"], "xk", markevery=5, label="XFOIL")
-ax.legend()
-ax.legend(loc='best')
-fig.savefig(FIGURE_DIR / f"thick_camber_{naca_code}_alpha{alpha}.pdf", bbox_inches="tight")
+# xfoil_data = xfoil.find_pressure_coefficients(naca_code, alpha=alpha, delete=True)
+# ax.plot(xfoil_data["x"], xfoil_data["Cp"], "xk", markevery=5, label="XFOIL")
+# ax.legend()
+# ax.legend(loc='best')
+# fig.savefig(FIGURE_DIR / f"thick_camber_{naca_code}_alpha{alpha}.pdf", bbox_inches="tight")

@@ -19,7 +19,7 @@ panels along the airfoil's surface. This time constant vortex elements are
 placed in the panels.
 Both methods are based on the Kutta condition, meaning this condition is
 intrinsically satisfied. Both methods have the same general structure, which can
-be seen in \autoref{fig:flow_diagram}. The steps are discussed in more detail
+be seen in \autoref{fig:activity}. The steps are discussed in more detail
 for each of the two methods in the following sections.
 
 % \begin{figure}[H]
@@ -199,7 +199,7 @@ same airfoil. Both the reference plot and obtained plot are shown in \autoref{fi
 % ###########################################################################################
 % ###########################################################################################
 
-\section{Linear Vortex Model - Paneled Airfoil Surface}
+\section{Linear Vortex Model}
 \label{sec:thick}
 The second method, described by %\citeauthor{katz_plotkin}\cite{katz_plotkin},
 \citeauthor{kuethe_chow_1998}\cite{kuethe_chow_1998}, places vortex elements
@@ -245,7 +245,7 @@ to $n-1$ vortices located at $(x_j, \: y_j)$ is obtained using
 
 \begin{equation}
   \label{eq:phi_thick}
-    \phi\left(x_{i}, y_{i}\right)=V_{\infty}\left(x_{i} \cos \alpha+y_{i} \sin \alpha\right)-\sum_{j=1}^{m} \int_{j} \frac{\gamma\left(s_{j}\right)}{2 \pi} \tan ^{-1}\left(\frac{y_{i}-y_{j}}{x_{i}-x_{j}}\right) d s_{j}
+    \phi\left(x_{i}, y_{i}\right)=V_{\infty}\left(x_{i} \cos \alpha+y_{i} \sin \alpha\right)-\sum_{j=1}^{n-1} \int_{j} \frac{\gamma\left(s_{j}\right)}{2 \pi} \tan ^{-1}\left(\frac{y_{i}-y_{j}}{x_{i}-x_{j}}\right) d s_{j}
   \end{equation}
   \begin{equation}
     \gamma\left(s_{j}\right)=\gamma_{j}+\left(\gamma_{j+1}-\gamma_{j}\right) \frac{s_{j}}{S_{j}}
@@ -277,59 +277,54 @@ to $n-1$ vortices located at $(x_j, \: y_j)$ is obtained using
 % \citeauthor{kuethe_chow_1998}\cite{kuethe_chow_1998} adds an equation, where the
 % Kutta condition is altered as shown in \autoref{eq:kutta2}. Either way results
 % in again an equal amount of equations and unknowns.
-
-
-\begin{equation}
-  \label{eq:kutta2}
-      \gamma_1 + \gamma_{n+1} = 0
-\end{equation}
+% \begin{equation}
+%   \label{eq:kutta2}
+%       \gamma_1 + \gamma_{n+1} = 0
+% \end{equation}
 
 Finally, \cref{eq:vind_thick} can be used to determine the induced velocity on a
-panel due to all vortices present on the surface panels. How to solve these
-equations is explained by \citeauthor{kuethe_chow_1998}\cite{kuethe_chow_1998}
-by splitting up and replacing large and complex equations with multiple coefficients.
+panel due to all vortices present on the surface panels. For the details of this
+linear vortex method and a simplified way to implement it by splitting up and
+replacing large and complex equations with multiple coefficients
+\citeauthor{kuethe_chow_1998}\cite{kuethe_chow_1998}
+.
 \begin{equation}
   \label{eq:vind_thick}
-  V_{i}=\cos \left(\theta_{i}-\alpha\right)+\sum_{j=1}^{m+1} A_{i j} \gamma_{j}^{\prime}
+  V_{i}=\cos \left(\theta_{i}-\alpha\right)+\sum_{j=1}^{n} A_{i j} \gamma_{j}^{\prime}
   \end{equation}
 
 
 Once the vorticity $\gamma_j$ is known for each vortex element, the change in
-lift and pressure are obtained using \autoref{eq:thick_lift} and
+lift and pressure are obtained using \autoref{eq:thick_lift}, where
+$\vec{\bf{L}}_i$ is the lift direction obtained by rotating the free stream
+vecor by \SI{90}{\degree} and
 \autoref{eq:thick_press} respectively.
 
 \begin{equation}
 \label{eq:thick_lift}
-\Delta L_i = \rho v_\infty \gamma_{j=i} s_j
+\sum_{i=1}^{n} C_{p_i} s_i \vec{\bf{n}}_i \cdot \vec{\bf{L}}
 \end{equation}
 \medskip
 \begin{equation}
 \label{eq:thick_press}
-Cp = 1 - v_i^2
+C_{p_i} = 1 - v_i^2
 \end{equation}
 \medskip
 
-To facilitate the implementation of \autoref{eq:v_ind_thick}, the coefficient
-breakdown version by \citeauthor{kuethe_chow_1998} was used in the actual code
-for this problem.
+% To facilitate the implementation of \autoref{eq:v_ind_thick}, the coefficient
+% breakdown version by \citeauthor{kuethe_chow_1998} was used in the actual code
+% for this problem.
 
 \subsection{Verification}
 The linear vortex method with paneled airfoil surface is validated with data
-obtained from XFOIL\cite{xfoil}. The pressure distribution found for the
-NACA4412 airfoil is shown in \autoref{fig:thick_verif}.
-\autoref{fig:thick_verif1} and \autoref{fig:thick_verif2} show the results for
-the NACA4412 at 0 and 10 degrees angle of attack respectively. It can be seen
-that the results coincide almost perfectly, the only exception being at zero
-angle of attack, where the calculated pressure coefficient near the leading edge
-on the bottom surface is slightly higher compared to the reference data. A
-second verification was performed, results from which are plotted in
-\autoref{fig:thick_verif3}, his time using the NACA0012 airfoil. Again, the
-only discrepancies are at the leading edge, where the program slightly
-underestimates the underpressure on the top surface. Note that
-\autoref{fig:thick_verif4} shows the pressure distribution over the NACA0012
-airfoil at 3 degrees angle of attack (instead of zero degrees like in
-\autoref{fig:thick_verif1}), since the symmetric airfoil at zero angle of attack
-has equal pressure on top and bottom surfaces, resulting in a simple line plot.
+obtained from XFOIL\cite{xfoil}. The pressure distribution found for two
+different airfoils is shown in \autoref{fig:thick_verif}.
+\autoref{fig:thick_verif1}  shows the results for
+the NACA0015 at 5 degrees angle of attack, while \autoref{fig:thick_verif2} plots results for
+the NACA2422 at 10 degrees angle of attack. Both have the respective results
+obtained from XFOIL plotted on top of the results obtained with \numfoil. It can be seen
+that the results coincide almost perfectly, with only negligible differences
+observable at the suction peak on the upper surface leading edge.
 
 \begin{figure}[h]
     \centering
@@ -356,7 +351,7 @@ below the values returned by XFOIL. For the NACA0012, the relative error
 $\epsilon$ is zero for $\alpha=0$, and increases with angle of attack. When
 $\alpha=10\deg$, the error has risen to $\epsilon=-3.51\%$ (the minus indication
 the obtained values is lower than the one returned by XFOIL). The same is true
-for the NACA4412 results, where the errro $\epsilon$ is lowest when $\alpha$ is
+for the NACA4412 results, where the error $\epsilon$ is lowest when $\alpha$ is
 zero, and increases with increasing angle of attack. The value of the error si
 lower, however, than for the symmetrical airfoil, having a value of
 $\epsilon=-2.07\%$ at $\alpha=10\deg$. These results are also shown as plots in \autoref{fig:cl_thick}
@@ -367,14 +362,14 @@ $\epsilon=-2.07\%$ at $\alpha=10\deg$. These results are also shown as plots in 
 	\label{tab:cl_thick}
     \begin{tabularx}{\textwidth}{C  C C C | C C C} %'L' for Left Aligned, 'C' for Centered, 'R' for Right Aligned
     \toprule\
-    \hfill & \multicolumn{3}{c}{$C_l$ NACA0012} & \multicolumn{3}{c}{$C_l$ NACA4412} \\ \toprule
+    \hfill & \multicolumn{3}{c}{$C_l$ NACA0015} & \multicolumn{3}{c}{$C_l$ NACA2422} \\ \toprule
     {$\alpha \:[\deg]$} & {$NumFoil$} & {$XFOIL$} & {$\epsilon$} & {$NumFoil$} & {$XFOIL$} & {$\epsilon$} \\ \toprule
-    0   & 0        & 0      & 0         & 0.5100 & 0.5109  & +0.0018    \\ \hdashline
-    3   & 0.3623   & 0.3583 & -0.0110   & 0.8715 & 0.8634  & -0.0093    \\ \hdashline
-    5   & 0.6034   & 0.5952 & -0.0136   & 1.1113 & 1.0983  & -0.0117    \\ \hdashline
-    8   & 0.9635   & 0.9449 & -0.0193   & 1.4683 & 1.4474  & -0.0209    \\ \hdashline%\midrule
-    10  & 1.2022   & 1.1724 & -0.0248   & 1.7041 & 1.6764  & -0.0162    \\ \hdashline
-    13  & 1.55743  & 1.5027 & -0.0351   & 2.0539 & 2.0114  & 0.0207     \\ \bottomrule
+    0   & 0        & 0      & 0         & 0.2868 & 0.2742  & +0.0126    \\ \hdashline
+    3   & 0.3687   & 0.3708 & -0.0021   & 0.6745 & 0.6645  & +0.0100    \\ \hdashline
+    5   & 0.6140   & 0.6175 & -0.0035   & 0.9320 & 0.9238  & +0.0082    \\ \hdashline
+    8   & 0.9802   & 0.9861 & -0.0059   & 1.3159 & 1.3105  & +0.0054    \\ \hdashline%\midrule
+    10  & 1.2227   & 1.2304 & -0.0077   & 1.5698 & 1.5663  & +0.0035    \\ \hdashline
+    13  & 1.5834  & 1.5939 & -0.0105   & 1.9468 & 1.9464  & +0.0004     \\ \bottomrule
     \end{tabularx}
 \end{table}
 
