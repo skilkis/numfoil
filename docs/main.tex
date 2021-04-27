@@ -8,6 +8,21 @@
 \supervisor{Dr. Leo Veldhuis}
 % \abstract{\input{examples/abstract.tex}}
 
+
+% \usepackage{etoolbox}
+% \makeatletter
+% \patchcmd{\chapter}{\if@openright\cleardoublepage\else\clearpage\fi}{}{}{}
+% \makeatother
+
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\chapter
+{\if@openright\cleardoublepage\else\clearpage\fi}
+{\par \vspace{10mm}}% Inserting a \par here!
+{}{}
+\makeatother
+
+
 \begin{document}
 
 \makecover[theme=light, fill opacity=0.2]

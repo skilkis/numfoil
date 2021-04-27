@@ -1,4 +1,7 @@
-\newcommand{\numfoil}{$\boldsymbol{\Gamma}$\textbf{py}\ }
+% \newcommand{\numfoil}{$\boldsymbol{\Gamma}$\textbf{py}\ }
+\newcommand{\numfoil}{\textsf{Numfoil}\ }
+\newcommand{\xfoil}{\textsf{XFOIL}\ }
+
 \chapter{Problem Description}
 To get a preliminary estimation of an airfoil's performance, numerical methods
 can be used which represent the airfoil as a series of flat, zero-thickness,
@@ -56,9 +59,7 @@ void of information due to usage of obscure variable names.
     \label{fig:activity}
 \end{wrapfigure}
 
-\blindtext\\
-
-\blindtext\\
+asdfghjkl
 
 \section{Geometry Definition}
 Before we can begin the analysis, the functions describing the desired airfoil's
@@ -80,7 +81,7 @@ line function.
 
 Here $m$ is the maximum camber and $P$ is the location of the maximum camber, or
 the first and second digit of the 4-digit NACA code divided by ten respectively.
-Subsequently, to find the coordinates of the the upper and lower airfoil
+Subsequently, to find the coordinates of the upper and lower airfoil
 surface, the thickness is applied perpendicular to the camber line using
 \autoref{eq:coor_u} and \autoref{eq:coor_l} respectively, where $\theta =
 \arctan\left( \frac{y_c}{dx}\right)$.
@@ -97,30 +98,31 @@ surface, the thickness is applied perpendicular to the camber line using
 \end{equation}
 
 \chapter{Panel Methods}  % TODO Decide if this should be a section?
-Two different methods well be implemented to peform basic airfoil analysis.
+Two different methods well be implemented to perform basic airfoil analysis.
 First, the airfoil is represented by its camberline only, and thus has a
 thickness of zero. The results of this method will be compared with the second
-method, which discritizes the airfoil by placing panels on the outer surface
-instead. Hence this second method does take airfoil thickness into account.
+method, which discretizes the airfoil by placing panels on the outer surface
+instead. Hence, this second method does take airfoil thickness into account.
 
 \section{Lumped Vortex Method}
 \label{sec:thin}
 The first method, described by \citeauthor{katz_plotkin}\cite{katz_plotkin}, analyzes an airfoil
-looking only at the airfoil's camber line. This discritization is visualized in
+looking only at the airfoil's camber line. This discretization is visualized in
 \autoref{fig:discr_thin}, where $n=7$ panels are placed on the camber line starting at
 the leading edge. These panels are created by adding $n+1$ nodes on the camber
 line, the coordinates for which are obtained using the camber line function from
 \autoref{eq:camber}. Lumped vortex elements and collocation points are placed at
 25\% and 75\% of each panel's length. This way the airfoil is represented as a
-set of zero-thickness vortex sheets. Not that linear node spacing is used in
-\autoref{fig:discr_thin}. For the implementation, however, cosine spacing is used to
+set of zero-thickness vortex sheets.
+% Note that linear node spacing is used in
+% \autoref{fig:discr_thin}. For the implementation, however, cosine spacing is used to
 increase accuracy of the results at the leading and trailing edge.
 
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=.8\textwidth]{static/disc_camber.png}
-\caption{Discritization of the airfoil camber line using $n=7$ panels \cite{katz_plotkin}}
+\caption{Discretization of the airfoil camber line using $n=7$ panels \cite{katz_plotkin}}
 \label{fig:discr_thin}
 \end{figure}
 
@@ -176,25 +178,97 @@ on the same panel. The vorticities, $\Gamma_j$, are the unknown which will be so
 Combining \autoref{eq:v_ind_thin} with \autoref{eq:thin_cond}, and moving the free-stream
 velocity from \autoref{eq:thin_cond} to the right hand side of the equation,  yields a
 system of $n$ equations which can be solved algebraically to find the vorticity of each vortex element.
-Once the vorticity $\Gamma_j$ is know for each vortex element, the change in lift and
-pressure are obtained using \autoref{eq:thin_lift} and \autoref{eq:thin_press} respectively.
+Once the vorticity $\Gamma_j$ is known for each vortex element, the change in lift and
+pressure are obtained using \autoref{eq:thin_lift} and \autoref{eq:thin_press} respectively \cite{katz_plotkin}.
  $s_i$ is the length of the $i-$th panel.
 
+\begin{minipage}{.5\linewidth}
 \begin{equation}
 \label{eq:thin_lift}
 \Delta L_i = \rho v_\infty \Gamma_{j=i}
 \end{equation}
+\end{minipage}%
+\begin{minipage}{.5\linewidth}
 \begin{equation}
 \label{eq:thin_press}
 \Delta P_i = \rho v_\infty \frac{\Gamma_{j=i}}{s_i}
 \end{equation}
+\end{minipage}%
 
 \subsection{Verification}
-The results of the zero-thickness camberline panel method are verified by
-comparison with example data from \citeauthor{katz_plotkin} for an elliptical
-camberline with a maximum camber of $0.1$. Since Naca 4-digit airfoils are
-limited to a maximum camber of $0.09$, the Naca 9501 is used to approximate that
-same airfoil. Both the reference plot and obtained plot are shown in \autoref{fig:verif_thin}.
+The results of the lumped vortex panel method are verified by comparing them to
+analytical data from an equation by \citeauthor{katz_plotkin} for an elliptical
+camberline. The camberline shape is given by \cref{eq:ellipticcamber}, and the
+respective pressure differential is given by \cref{eq:cpell}. The pressure
+differential distributions are plotted for two values of $\varepsilon$ and $\alpha$
+in \cref{fig:thin_verif}. The plots labeled with the angle of attack are the
+ones obtained with the created tool (\numfoil). The plots labeled `exact solution' were
+created using \cref{eq:cpell}. Finally, the pressure differential was calculated
+by subtracting the pressure distributions of the upper and lower surface of an
+airfoil as obtained from \xfoil. In order to get results for a near-flat plate, elliptical
+camberline, the airfoil in \xfoil was set to a NACAX501 airfoil. Here the X takes
+on the value of camber corresponding to $X = 100\varepsilon$.
+The value of angle of attack $\alpha$ is capped at \SI{7}{\degree}, as \xfoil does
+not converge to a pressure distribution solution for larger values.
+
+\begin{equation}
+  \label{eq:ellipticcamber}
+  \eta(x) = 4 \varepsilon \frac{x}{c} \left[ 1 - \frac{x}{c} \right]
+\end{equation}
+\begin{equation}
+  \label{eq:cpell}
+  \Delta C_p = 4 \sqrt{\frac{c-x}{x}}\alpha + 32 \frac{\varepsilon}{c}\sqrt{\frac{x}{c}\left( 1- \frac{x}{c}\right)}
+\end{equation}
+\medskip
+
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}{.5\textwidth}
+    \centering
+    \captionsetup{width=.8\linewidth}
+    \includegraphics[width=.9\linewidth]{static/thin_airfoil_verification_a5.pdf}
+    \caption{\centering Pressure differential distribution for $\epsilon = 0.1$ at $\alpha = 5^{\circ}$}
+    \label{fig:thin_verif1}
+  \end{subfigure}%
+  \begin{subfigure}{.5\textwidth}
+    \centering
+    \captionsetup{width=.8\linewidth}
+    \includegraphics[width=.9\linewidth]{static/thin_airfoil_verification_a7.pdf}
+    \caption{\centering Pressure differential distribution for $\epsilon = 0.3$ at $\alpha = 7^{\circ}$}
+    \label{fig:thin_verif2}
+  \end{subfigure}
+  \caption{\centering Verification of lumped vortex method results by comparing with the analytical solution for elliptical camber \cite{katz_plotkin}}
+  \label{fig:thin_verif}
+\end{figure}
+
+The lift coefficients are verified by comparing once more to data obtained from
+\xfoil. This time, a simple flat plate is approximated by the NACA0001 airfoil,
+and a camberline of a NACA24XX airfoil by setting the thickness as low as
+possible, i.e. NACA2401. Resulting lift coefficients for a sequence of angle of
+attack values are listed in \cref{tab:cl_thin}. For the near-flat plate, the
+error does not exceed $1.4\%$, while for the camberline, the error reaches
+values up to $4.75\%$ at higher angles of attack.
+% These results should be taken
+% with a grain of salt, as flat plates have zero-radius leading edges which cause
+% suction peaks of possible infinite magnitude, which neither method might account
+% for correctly.
+
+\begin{table}[H]
+	\centering
+	\caption{Estimated values of $C_l$ for a range of angles of attack from \xfoil and NumFoil, as well as the relative error, for NACA0001 and NACA2401.}
+	\label{tab:cl_thin}
+    \begin{tabularx}{\textwidth}{C  C C C | C C C} %'L' for Left Aligned, 'C' for Centered, 'R' for Right Aligned
+    \toprule\
+    \hfill & \multicolumn{3}{c}{$C_l$ NACA0001} & \multicolumn{3}{c}{$C_l$ NACA2401} \\ \toprule
+    {$\alpha \:[\deg]$} & {$NumFoil$} & {$\xfoil$} & {$\epsilon$} & {$NumFoil$} & {$\xfoil$} & {$\epsilon$} \\ \toprule
+    0   & 0        & 0      & 0         & 0.2266 & 0.2302  & -0.0155    \\ \hdashline
+    3   & 0.3288   & 0.3335 & -0.0139   & 0.5552 & 0.5599  & -0.0084    \\ \hdashline
+    5   & 0.5476   & 0.5550 & -0.0133   & 0.7735 & 0.7729  & +0.0007    \\ \hdashline
+    8   & 0.8744   & 0.8843 & -0.0111   & 1.0990 & 1.0810  & +0.0167    \\ \hdashline%\midrule
+    10  & 1.0911   & 1.1010 & -0.0090   & 1.3144 & 1.2781  & +0.0284    \\ \hdashline
+    13  & 1.4134  & 1.4204 & -0.0049   & 1.6345 & 1.5604  & +0.0475     \\ \bottomrule
+    \end{tabularx}
+\end{table}
 
 % ###########################################################################################
 % ###########################################################################################
@@ -219,19 +293,26 @@ added to ensure smooth flow transition to freestream at the trailing edge. This
 results in one extra collocation point at the trailing edge, meaning that while
 there are only $n-1$ panels, there are $n$ collocation points, the $n$-th one
 representing the Kutta-condition.
+\smallskip
+
+\begin{minipage}{.5\linewidth}
 \begin{equation}
   \label{eq:thick_cond}
   \frac{\partial}{\partial n_{i}} \phi\left(x_{i}, y_{i}\right)=0
   \end{equation}
+\end{minipage}
 % \begin{equation}
 % \label{eq:thick_cond}
 %     \left( U_\infty + u_i, \: W_\infty + w_i \right) \cdot \left( \cos \alpha_i,
 %     \: -\sin \alpha_i \right) = 0
 % \end{equation}
+\begin{minipage}{.5\linewidth}
 \begin{equation}
   \label{eq:kutta}
       \gamma_1 + \gamma_{n} = 0
 \end{equation}
+\end{minipage}
+\smallskip
 
 The velocity potential, $\phi$, in a collocation point at $(x_i,\: y_i)$ due
 to $n-1$ vortices located at $(x_j, \: y_j)$ is obtained using
@@ -241,7 +322,6 @@ to $n-1$ vortices located at $(x_j, \: y_j)$ is obtained using
 % Substituting \autoref{eq:phi_thick} in \autoref{eq:thick_cond} and applying it
 % to every collocation point present will yield a system of $n$ equations which
 % can be solved for the vorticities $\gamma_j$.
-
 
 \begin{equation}
   \label{eq:phi_thick}
@@ -291,38 +371,35 @@ replacing large and complex equations with multiple coefficients
 \begin{equation}
   \label{eq:vind_thick}
   V_{i}=\cos \left(\theta_{i}-\alpha\right)+\sum_{j=1}^{n} A_{i j} \gamma_{j}^{\prime}
-  \end{equation}
+\end{equation}
 
+Once the vorticity $\gamma_j$ is known for each vortex element, the total lift
+force is obtained using \autoref{eq:thick_lift}, where $\vec{\bf{L}}$ is the
+lift direction obtained by rotating the free stream vector by \SI{90}{\degree},
+and pressure coefficients are given by \autoref{eq:thick_press}.
+\smallskip
 
-Once the vorticity $\gamma_j$ is known for each vortex element, the change in
-lift and pressure are obtained using \autoref{eq:thick_lift}, where
-$\vec{\bf{L}}_i$ is the lift direction obtained by rotating the free stream
-vecor by \SI{90}{\degree} and
-\autoref{eq:thick_press} respectively.
-
+\begin{minipage}{.5\linewidth}
 \begin{equation}
 \label{eq:thick_lift}
-\sum_{i=1}^{n} C_{p_i} s_i \vec{\bf{n}}_i \cdot \vec{\bf{L}}
+C_l = \sum_{i=1}^{n} C_{p_i} s_i \vec{\bf{n}}_i \cdot \vec{\bf{L}}
 \end{equation}
-\medskip
+\end{minipage}
+\begin{minipage}{.5\linewidth}
 \begin{equation}
 \label{eq:thick_press}
 C_{p_i} = 1 - v_i^2
 \end{equation}
-\medskip
-
-% To facilitate the implementation of \autoref{eq:v_ind_thick}, the coefficient
-% breakdown version by \citeauthor{kuethe_chow_1998} was used in the actual code
-% for this problem.
+\end{minipage}
 
 \subsection{Verification}
 The linear vortex method with paneled airfoil surface is validated with data
-obtained from XFOIL\cite{xfoil}. The pressure distribution found for two
+obtained from \xfoil\cite{xfoil}. The pressure distribution found for two
 different airfoils is shown in \autoref{fig:thick_verif}.
 \autoref{fig:thick_verif1}  shows the results for
 the NACA0015 at 5 degrees angle of attack, while \autoref{fig:thick_verif2} plots results for
 the NACA2422 at 10 degrees angle of attack. Both have the respective results
-obtained from XFOIL plotted on top of the results obtained with \numfoil. It can be seen
+obtained from \xfoil plotted on top of the results obtained with \numfoil. It can be seen
 that the results coincide almost perfectly, with only negligible differences
 observable at the suction peak on the upper surface leading edge.
 
@@ -330,68 +407,72 @@ observable at the suction peak on the upper surface leading edge.
     \centering
     \begin{subfigure}{.5\textwidth}
       \centering
+      \captionsetup{width=.8\linewidth}
       \includegraphics[width=.9\linewidth]{static/thick_verif_naca0015_alpha5.pdf}
-      \caption{Pressure distribution NACA0015 at $\alpha = 5^{\circ}$}
+      \caption{\centering Pressure distribution NACA0015 at $\alpha = 5^{\circ}$}
       \label{fig:thick_verif1}
     \end{subfigure}%
     \begin{subfigure}{.5\textwidth}
       \centering
+      \captionsetup{width=.8\linewidth}
       \includegraphics[width=.9\linewidth]{static/thick_verif_naca2422_alpha10.pdf}
-      \caption{Pressure distribution NACA2422 at $\alpha = 10^{\circ}$}
+      \caption{\centering Pressure distribution NACA2422 at $\alpha = 10^{\circ}$}
       \label{fig:thick_verif2}
     \end{subfigure}
-    \caption{\centering Validation of linear vortex method results with XFOIL\cite{xfoil}}
+    \caption{\centering Validation of linear vortex method results with \xfoil\cite{xfoil}}
     \label{fig:thick_verif}
 \end{figure}
 
 
 Looking at the resulting estimation for $C_l$, shown in \autoref{tab:cl_thick},
 it can be seen that the calculated values for the lift coefficient are slightly
-below the values returned by XFOIL. For the NACA0012, the relative error
-$\epsilon$ is zero for $\alpha=0$, and increases with angle of attack. When
-$\alpha=10\deg$, the error has risen to $\epsilon=-3.51\%$ (the minus indication
-the obtained values is lower than the one returned by XFOIL). The same is true
-for the NACA4412 results, where the error $\epsilon$ is lowest when $\alpha$ is
-zero, and increases with increasing angle of attack. The value of the error si
-lower, however, than for the symmetrical airfoil, having a value of
-$\epsilon=-2.07\%$ at $\alpha=10\deg$. These results are also shown as plots in \autoref{fig:cl_thick}
+below the values returned by \xfoil for the symmetrical airfoil, and vice versa
+for the cambered airfoil tested. For the NACA0015, the relative error $\epsilon$
+is zero for $\alpha=0$, and increases with angle of attack. When
+$\alpha=10\deg$, the error has risen to $\epsilon=-0.66\%$ (the minus indication
+the obtained values are lower than the one returned by \xfoil). The opposite is
+true for the NACA2422 results, where the error $\epsilon$ is lowest when
+$\alpha$ is high, and increases with decreasing angle of attack. The value of
+the error also reaches higher values, namely $\epsilon=+4.58\%$ at
+$\alpha=0\deg$.
+% These results are also shown as plots in \autoref{fig:cl_thick}
 
 \begin{table}[H]
 	\centering
-	\caption{Estimated values of $C_l$ for a range of angles of attack from XFOIL and NumFoil, as well as the relative error, for NACA0012 and NACA4412.}
+	\caption{Estimated values of $C_l$ for a range of angles of attack from \xfoil and NumFoil, as well as the relative error, for NACA0012 and NACA4412.}
 	\label{tab:cl_thick}
     \begin{tabularx}{\textwidth}{C  C C C | C C C} %'L' for Left Aligned, 'C' for Centered, 'R' for Right Aligned
     \toprule\
     \hfill & \multicolumn{3}{c}{$C_l$ NACA0015} & \multicolumn{3}{c}{$C_l$ NACA2422} \\ \toprule
-    {$\alpha \:[\deg]$} & {$NumFoil$} & {$XFOIL$} & {$\epsilon$} & {$NumFoil$} & {$XFOIL$} & {$\epsilon$} \\ \toprule
-    0   & 0        & 0      & 0         & 0.2868 & 0.2742  & +0.0126    \\ \hdashline
-    3   & 0.3687   & 0.3708 & -0.0021   & 0.6745 & 0.6645  & +0.0100    \\ \hdashline
-    5   & 0.6140   & 0.6175 & -0.0035   & 0.9320 & 0.9238  & +0.0082    \\ \hdashline
-    8   & 0.9802   & 0.9861 & -0.0059   & 1.3159 & 1.3105  & +0.0054    \\ \hdashline%\midrule
-    10  & 1.2227   & 1.2304 & -0.0077   & 1.5698 & 1.5663  & +0.0035    \\ \hdashline
-    13  & 1.5834  & 1.5939 & -0.0105   & 1.9468 & 1.9464  & +0.0004     \\ \bottomrule
+    {$\alpha \:[\deg]$} & {$NumFoil$} & {$\xfoil$} & {$\epsilon$} & {$NumFoil$} & {$\xfoil$} & {$\epsilon$} \\ \toprule
+    0   & 0        & 0      & 0         & 0.2868 & 0.2742  & +0.0458    \\ \hdashline
+    3   & 0.3687   & 0.3708 & -0.0054   & 0.6745 & 0.6645  & +0.0150    \\ \hdashline
+    5   & 0.6140   & 0.6175 & -0.0056   & 0.9320 & 0.9238  & +0.0088    \\ \hdashline
+    8   & 0.9802   & 0.9861 & -0.0060   & 1.3159 & 1.3105  & +0.0041    \\ \hdashline%\midrule
+    10  & 1.2227   & 1.2304 & -0.0062   & 1.5698 & 1.5663  & +0.0022    \\ \hdashline
+    13  & 1.5834  & 1.5939 & -0.0066   & 1.9468 & 1.9464  & +0.0002     \\ \bottomrule
     \end{tabularx}
 \end{table}
 
-\begin{figure}[h]
-  \centering
-  \begin{subfigure}{.5\textwidth}
-    \centering
-    \captionsetup{width=.8\linewidth}
-    \includegraphics[width=.9\linewidth]{static/naca0012_cl_verif.png}
-    \caption{\centering $C_l - \alpha$ plots for NACA0012}
-    \label{fig:cl_thick_0012}
-  \end{subfigure}\hfill% or \hspace{5mm} or \hspace{0.3\textwidth}
-  \begin{subfigure}{.5\textwidth}
-    \centering
-    \captionsetup{width=.9\linewidth}
-    \includegraphics[width=.9\linewidth]{static/naca4412_cl_verif.png}
-    \caption{\centering $C_l - \alpha$ plots for NACA0012}
-    \label{fig:cl_thick_4412}
-  \end{subfigure}
-  \caption{\centering Comparing  $C_l - \alpha$ with results from XFOIL for NACA0012 and NACA4412}
-  \label{fig:cl_thick}
-\end{figure}
+% \begin{figure}[h]
+%   \centering
+%   \begin{subfigure}{.5\textwidth}
+%     \centering
+%     \captionsetup{width=.8\linewidth}
+%     \includegraphics[width=.9\linewidth]{static/naca0012_cl_verif.png}
+%     \caption{\centering $C_l - \alpha$ plots for NACA0012}
+%     \label{fig:cl_thick_0012}
+%   \end{subfigure}\hfill% or \hspace{5mm} or \hspace{0.3\textwidth}
+%   \begin{subfigure}{.5\textwidth}
+%     \centering
+%     \captionsetup{width=.9\linewidth}
+%     \includegraphics[width=.9\linewidth]{static/naca4412_cl_verif.png}
+%     \caption{\centering $C_l - \alpha$ plots for NACA0012}
+%     \label{fig:cl_thick_4412}
+%   \end{subfigure}
+%   \caption{\centering Comparing  $C_l - \alpha$ with results from \xfoil for NACA0012 and NACA4412}
+%   \label{fig:cl_thick}
+% \end{figure}
 
 % ###########################################################################################
 % ###########################################################################################
@@ -404,142 +485,188 @@ obtained results is checked in \autoref{sec:panels}.
 
 \section{Effect of Camber}
 \label{sec:camber}
-To see the effect of varying camber on the results, both the panelled
-comaberline and panelled surface methods will be used on airfoils a set of
-airfoils (see \autoref{fig:camber}) where the only the camber value is
-different. The first one, NACA0012, is a symmetrical airfoil and thus has zero
-camber. Subsequent airfoils NACA2412, NACA4412, and NACA9412 have a respective
-maximum camber of 0.2, 0.4, and 0.9 at $\frac{x}{c}=0.4$. \autoref{fig:camber1}
-plot these airfoils' pressure distributions for $\alpha=3$, and
-\autoref{fig:camber2} does the same for $\alpha=8$.
+To see the effect of varying camber on the results, both the paneled
+camberline and paneled surface methods will be used on a set of
+airfoils (see \autoref{fig:camber}) where only the camber value is
+different. The first one, NACA0015, is a symmetrical airfoil and thus has zero
+camber. Subsequent airfoils, NACA2415 and NACA4415 have a respective
+maximum camber of 0.2 and 0.4 at $\frac{x}{c}=0.4$. \autoref{fig:camber1}
+plot the pressure distributions obtained using the linear vortex method, and
+\autoref{fig:camber2} shows the pressure differential plots resulting from the
+lumped vortex method.
 
 \begin{figure}[h]
     \centering
     \begin{subfigure}{.5\textwidth}
       \centering
       \captionsetup{width=.8\linewidth}
-      \includegraphics[width=.9\linewidth]{static/camber_a3.png}
-      \caption{\centering Pressure distributions with varying camber at $\alpha = 3^{\circ}$}
+      \includegraphics[width=.9\linewidth]{static/thick_camber_a5.pdf}
+      \caption{\centering Pressure distributions with varying camber at $\alpha
+      = 5^{\circ}$ using the linear vortex method}
       \label{fig:camber1}
     \end{subfigure}\hfill% or \hspace{5mm} or \hspace{0.3\textwidth}
     \begin{subfigure}{.5\textwidth}
       \centering
-      \captionsetup{width=.9\linewidth}
-      \includegraphics[width=.9\linewidth]{static/camber_a8.png}
-      \caption{\centering Pressure distributions with varying camber at $\alpha = 8^{\circ}$}
+      \captionsetup{width=.8\linewidth}
+      \includegraphics[width=.9\linewidth]{static/thin_camber_a5.pdf}
+      \caption{\centering Pressure distributions with varying camber at $\alpha
+      = 5^{\circ}$ using the lumped vortex method}
       \label{fig:camber2}
     \end{subfigure}
-    \caption{\centering Plots showing the effect of camber on the pressure distribution}
+    \caption{\centering Plots showing the effect of camber on the pressure distribution on airfoils with equal thickness and maximum camber location}
     \label{fig:camber}
 \end{figure}
 
-Clearly, a higher camber value leads to higher local values for the pressure
+Clearly, a higher camber value leads to higher local values for the (delta) pressure
 coefficient. This means the plotted lines representing the $C_p$ of the upper
-and lower surfaces lie further appart. This increase in pressure difference in
-turn results in a higher value for the lift coefficients. The increase of $C_P$
-with camber is not linear. It can be seen that at high values for camber, the
-increase of pressure coefficients with camber is higher than for low camber.
+and lower surfaces lie further apart in \cref{fig:camber1}. This increase in pressure difference in
+turn results in a higher value for the lift coefficients.
+\medskip
 
-The same is true for $C_l$, as shown in \autoref{fig:cambercl}. For different
-angles of attack, the $C_l$ is plotted as a function of camber for two airfoil
-series: \autoref{fig:cambercl1} shows the $C_l$ variations for NACA4X12, where X
-is the camber value$x10$, and \autoref{fig:cambercl2} shows the $C_l$ variations
-for NACA2X22. Angle of attack clearly has no effect on how much the camber
-increases the lift coefficient, as the lines of different values for $\alpha$
-ahave equal gradients for every camber value.
+The same is true for the lift polars, as shown in \autoref{fig:cambercl}.
+\autoref{fig:cambercl1} shows the changes in lift polar resulting from the
+linear vortex model, and \autoref{fig:cambercl2} the same data but now obtained
+using lumped vortex model. The plots show that regardless of the method used,
+the lift gradient stays constant with increasing camber, but the lift
+coefficient values for constant angles of attack increase with camber. Note that
+while the airfoil NACA codes in \cref{fig:cambercl2} show a thickness of 0.15,
+the lumped vortex model reduces them to zero-thickness plates. Hence why the
+symmetrical NACA0015, which is just a flat plate in this model, has a lift
+polar which coincides with the theoretical gradient value of $C_{l_\alpha} = 2\pi$.
+% Angle of attack clearly has no effect on how much the camber increases
+% the lift coefficient, as the lines of different values for $\alpha$ ahave equal
+% gradients for every camber value.
 
+% \begin{figure}[h]
+%     \centering
+%     \begin{subfigure}{.5\textwidth}
+%       \centering
+%       \captionsetup{width=.8\linewidth}
+%       \includegraphics[width=.9\linewidth]{static/cambereffect_thick.png}
+%       \caption{\centering Variation of $C_l$ with camber for NACA4X12}
+%       \label{fig:cambercl1}
+%     \end{subfigure}\hfill% or \hspace{5mm} or \hspace{0.3\textwidth}
+%     \begin{subfigure}{.5\textwidth}
+%       \centering
+%       \captionsetup{width=.9\linewidth}
+%       \includegraphics[width=.9\linewidth]{static/cambereffect2_thick.png}
+%       \caption{\centering Variation of $C_l$ with camber for NACA2X22}
+%       \label{fig:cambercl2}
+%     \end{subfigure}
+%     \caption{\centering Variation of $C_l$ with increasing camber for different angles of attack. The X in the NACA codes is the camber which is varied.}
+%     \label{fig:cambercl}
+% \end{figure}
 \begin{figure}[h]
+  \centering
+  \begin{subfigure}{.5\textwidth}
     \centering
-    \begin{subfigure}{.5\textwidth}
-      \centering
-      \captionsetup{width=.8\linewidth}
-      \includegraphics[width=.9\linewidth]{static/cambereffect_thick.png}
-      \caption{\centering Variation of $C_l$ with camber for NACA4X12}
-      \label{fig:cambercl1}
-    \end{subfigure}\hfill% or \hspace{5mm} or \hspace{0.3\textwidth}
-    \begin{subfigure}{.5\textwidth}
-      \centering
-      \captionsetup{width=.9\linewidth}
-      \includegraphics[width=.9\linewidth]{static/cambereffect2_thick.png}
-      \caption{\centering Variation of $C_l$ with camber for NACA2X22}
-      \label{fig:cambercl2}
-    \end{subfigure}
-    \caption{\centering Variation of $C_l$ with increasing camber for different angles of attack. The X in the NACA codes is the camber which is varied.}
-    \label{fig:cambercl}
+    \captionsetup{width=.8\linewidth}
+    \includegraphics[width=.9\linewidth]{static/thick_camber_cla.pdf}
+    \caption{\centering Linear vortex method}
+    \label{fig:cambercl1}
+  \end{subfigure}\hfill% or \hspace{5mm} or \hspace{0.3\textwidth}
+  \begin{subfigure}{.5\textwidth}
+    \centering
+    \captionsetup{width=.8\linewidth}
+    \includegraphics[width=.9\linewidth]{static/thin_camber_cla.pdf}
+    \caption{\centering Lumped vortex method}
+    \label{fig:cambercl2}
+  \end{subfigure}
+  \caption{\centering Change of lift polar with increasing camber}
+  \label{fig:cambercl}
 \end{figure}
 
-
-
+% ###########################################################################################
+% ###########################################################################################
 \section{Effect of Airfoil Thickness}
 \label{sec:thickness}
-
-For the lumped vortex method, with a panelled camberline, as discussed in
-\autoref{sec:thin}, the thickness will not have any effect on the results. This
+For the lumped vortex method, with a panelled camberline, the thickness will not
+have any effect on the results, as can be seen in \cref{fig:thin_tc}. This
 method only looks at the camberline, and ignores the airfoil's thickness.
-Instead, only the constant vortex method with panelled airfoil surfaces from
-\autoref{sec:thick} can be used for this. Again, results for symmetric
-(NACA00XX) and cambered airfoils (NACA44XX) are plotted in
-\autoref{fig:thickcp1} and \autoref{fig:thickcp2} respectively. The angle of
-attack is constant for all cases: $\alpha = 5^{\circ}$. The pressure
-distributions show that an increase in thickness reduces the suction peak on the
-leading edge, while increasing the pressure deferential over the rest of the
-airfoil, leading to a net increase in lift. This is confirmed by looking at the
-change of $C_l$ with increasing thicness, shown in \autoref{fig:thickcl}.
-Comparing the results for a symmetric airfoil (\autoref{fig:thickcl1}) with
-those for a cambered airfoil (\autoref{fig:thickcl2}), shows that the increase
-in lift for a cambered airfoil is greater than for a symmetric airfoil if the
-thickness is increased. This can be seen by the slightly larger gradients in
-\autoref{fig:thickcl2}, compared to \autoref{fig:thickcl1}.
+Instead, to evaluate the effect of thickness, the linear vortex method from
+\autoref{sec:thick} can be used for this. Pressure distribution plots, obtained
+using the linear vortex model, for symmetric airfoil with different thickness
+values are shown in \cref{fig:thick_tc}.
+The angle of attack is constant for all
+cases: $\alpha = 5^{\circ}$. The pressure distributions show that an increase in
+thickness reduces the suction peak on the leading edge, while increasing the
+pressure deferential over the rest of the airfoil, leading to a net increase in
+lift.
+\medskip
+
+Comparing the plots for a thin airfoil (\cref{fig:thin_tc} or NACA0001 in
+\cref{fig:thick_tc}), it can be seen that the biggest difference is the pressure
+at the leading edge. Thin or flat-plate airfoils have a (near) zero-radius
+leading edge, cause a very large or even infinite pressure spike and lower
+pressure differential across the rest of the airfoil. This pressure spike will
+result in very early separation at increased angles of attack. Thicker airfoils
+on the other hand have a much lower suction peak on the leading edge. They are
+thus capable of achieving much higher angles of attack due to the absence of
+this strong adverse pressure gradient.
 
 \begin{figure}[h]
   \centering
   \begin{subfigure}{.5\textwidth}
     \centering
     \captionsetup{width=.8\linewidth}
-    \includegraphics[width=.9\linewidth]{static/thickness_effect_00xx.png}
-    \caption{\centering Pressure distributions with varying thickness for a symmetric airfoil}
-    \label{fig:thickcp1}
+    \includegraphics[width=.9\linewidth]{static/thick_tc_a5.pdf}
+    \caption{\centering Pressure distributions for varying thickness using the linear vortex method}
+    \label{fig:thick_tc}
   \end{subfigure}\hfill% or \hspace{5mm} or \hspace{0.3\textwidth}
   \begin{subfigure}{.5\textwidth}
     \centering
-    \captionsetup{width=.9\linewidth}
-    \includegraphics[width=.9\linewidth]{static/thickness_effect_44xx.png}
-    \caption{\centering Pressure distributions with varying thickness for a cambered airfoil}
-    \label{fig:thickcp2}
+    \captionsetup{width=.8\linewidth}
+    \includegraphics[width=.9\linewidth]{static/thin_tc_a5.pdf}
+    \caption{\centering  Pressure distributions for varying thickness using the lumped vortex method}
+    \label{fig:thin_tc}
   \end{subfigure}
-  \caption{\centering Effect of thickness on the pressure distribution for a cambered and symmetric airfoil at $\alpha = 5^{\circ}$.}
+  \caption{\centering Effect of thickness on the pressure distribution for a symmetric airfoil at $\alpha = 5^{\circ}$.}
   \label{fig:thickcp}
 \end{figure}
 
+The changes in lift polar with increasing thickness can be observed in
+\autoref{fig:tc_cla}. Once more, as expected the lumped vortex method does not
+show any changes with varying thickness, and lift polars coincide with the
+theoretical lift polar corresponding to a lift gradient of  $C_{l_\alpha} =
+2\pi$.
+The lift polars obtained using the linear vortex model show an increase in the
+lift gradient (slope of the $C_l-\alpha$ curve) with increasing thickness. Since
+the polars go through the origin of the plot, the
+exact value of the lift gradient can be determined by, e.g., taking the value of
+$C_l$ at $\alpha=\SI{10}{\degree}$ and dividing that value of $C_l$ by the
+equivalent of \SI{10}{\degree} in radians. This basically comes down to finding
+$C_{l_\alpha}=\frac{\Delta C_l}{\Delta \alpha}$.
+
 \begin{figure}[h]
   \centering
   \begin{subfigure}{.5\textwidth}
     \centering
     \captionsetup{width=.8\linewidth}
-    \includegraphics[width=.9\linewidth]{static/thickness_Cl_effect_00xx.png}
-    \caption{\centering $C_l$ values for varying thickness for a symmetric airfoil (NACA00XX)}
-    \label{fig:thickcl1}
+    \includegraphics[width=.9\linewidth]{static/thick_tc_cla.pdf}
+    \caption{\centering Lift polar for varying thickness using the linear vortex method}
+    \label{fig:thick_tc_cla}
   \end{subfigure}\hfill% or \hspace{5mm} or \hspace{0.3\textwidth}
   \begin{subfigure}{.5\textwidth}
     \centering
-    \captionsetup{width=.9\linewidth}
-    \includegraphics[width=.9\linewidth]{static/thickness_Cl_effect_44xx.png}
-    \caption{\centering $C_l$ values for with varying thickness for a cambered airfoil (NACA44XX)}
-    \label{fig:thickcl2}
+    \captionsetup{width=.8\linewidth}
+    \includegraphics[width=.9\linewidth]{static/thin_tc_cla.pdf}
+    \caption{\centering Lift polar for varying thickness using the lumped vortex method}
+    \label{fig:thin_tc_cla}
   \end{subfigure}
-  \caption{\centering Effect of thickness on the $C_l$ for a cambered and symmetric airfoil at different angles of attack.}
-  \label{fig:thickcl}
+  \caption{\centering Effect of thickness on the $C_l$ for a symmetric airfoil at different angles of attack.}
+  \label{fig:tc_cla}
 \end{figure}
 
 
-
+% ###########################################################################################
+% ###########################################################################################
 \section{Effect of Panel Density}
 \label{sec:panels}
 Varying the panel density of course will also vary the fidelity of the analysis.
 \autoref{fig:thick_panels} shows the effect of increasing the amount of panels
 on $C_l$ (with $\alpha = 5^{\circ}$), for a symmetric (\autoref{fig:thick_panels1}) and a cambered
 (\autoref{fig:thick_panels2}) airfoil. The choice was made to consider values
-with a relative error lower than 0.5\%, compared to values from XFOIL, are
+with a relative error lower than 0.5\%, compared to values from \xfoil, are
 adequate. To satisfy this requirement, 98 panels are needed for the symmetric
 airfoil and 102 are required for the cambered airfoil. From this it can be
 concluded that, to obtain adequately accurate values, at no less than 100 panels
@@ -550,15 +677,35 @@ should be used at all times.
   \begin{subfigure}{.5\textwidth}
     \centering
     \captionsetup{width=.8\linewidth}
+    \includegraphics[width=.9\linewidth]{static/thick_panels.pdf}
+    \caption{\centering Lift polar for varying thickness using the linear vortex method}
+    \label{fig:thick_npanels}
+  \end{subfigure}\hfill% or \hspace{5mm} or \hspace{0.3\textwidth}
+  \begin{subfigure}{.5\textwidth}
+    \centering
+    \captionsetup{width=.8\linewidth}
+    \includegraphics[width=.9\linewidth]{static/thin_panels.pdf}
+    \caption{\centering Lift polar for varying thickness using the lumped vortex method}
+    \label{fig:thin_npanels}
+  \end{subfigure}
+  \caption{\centering Effect of thickness on the $C_l$ for a symmetric airfoil at different angles of attack.}
+  \label{fig:npanels}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}{.5\textwidth}
+    \centering
+    \captionsetup{width=.8\linewidth}
     \includegraphics[width=.9\linewidth]{static/conv_thick_sym.png}
-    \caption{For the NACA0012 at $\alpha = 5^{\circ}$, results are within 0.5\% of XFOIL with 98 panels}
+    \caption{For the NACA0012 at $\alpha = 5^{\circ}$, results are within 0.5\% of \xfoil with 98 panels}
     \label{fig:thick_panels1}
   \end{subfigure}%
   \begin{subfigure}{.5\textwidth}
     \centering
     \captionsetup{width=.8\linewidth}
     \includegraphics[width=.9\linewidth]{static/conv_thick.png}
-    \caption{For the NACA4412 at $\alpha = 5^{\circ}$, results are within 0.5\% of XFOIL with 102 panels}
+    \caption{For the NACA4412 at $\alpha = 5^{\circ}$, results are within 0.5\% of \xfoil with 102 panels}
     \label{fig:thick_panels2}
   \end{subfigure}
   \caption{\centering Convergence of results with increasing panel density}
