@@ -253,7 +253,7 @@ values up to $4.75\%$ at higher angles of attack.
 % suction peaks of possible infinite magnitude, which neither method might account
 % for correctly.
 
-\begin{table}[H]
+\begin{table}[]
 	\centering
 	\caption{Estimated values of $C_l$ for a range of angles of attack from \xfoil and NumFoil, as well as the relative error, for NACA0001 and NACA2401.}
 	\label{tab:cl_thin}
@@ -437,7 +437,7 @@ the error also reaches higher values, namely $\epsilon=+4.58\%$ at
 $\alpha=0\deg$.
 % These results are also shown as plots in \autoref{fig:cl_thick}
 
-\begin{table}[H]
+\begin{table}[]
 	\centering
 	\caption{Estimated values of $C_l$ for a range of angles of attack from \xfoil and NumFoil, as well as the relative error, for NACA0012 and NACA4412.}
 	\label{tab:cl_thick}
@@ -663,14 +663,21 @@ $C_{l_\alpha}=\frac{\Delta C_l}{\Delta \alpha}$.
 \section{Effect of Panel Density}
 \label{sec:panels}
 Varying the panel density of course will also vary the fidelity of the analysis.
-\autoref{fig:thick_panels} shows the effect of increasing the amount of panels
-on $C_l$ (with $\alpha = 5^{\circ}$), for a symmetric (\autoref{fig:thick_panels1}) and a cambered
-(\autoref{fig:thick_panels2}) airfoil. The choice was made to consider values
-with a relative error lower than 0.5\%, compared to values from \xfoil, are
-adequate. To satisfy this requirement, 98 panels are needed for the symmetric
-airfoil and 102 are required for the cambered airfoil. From this it can be
-concluded that, to obtain adequately accurate values, at no less than 100 panels
-should be used at all times.
+\autoref{fig:npanels} shows the effect of increasing the amount of panels on the
+resulting pressure distribution. Clearly a larger number of panels leads to more
+accurate results. Note that the amount of panels is the total amount for the
+linear vortex method, meaning the upper and lower airfoil surface each half of
+this amount of panels. To determine the recommended amount of panels, the lift
+coefficient is calculated for an increasing amount of panels, until the relative
+error is less than $\epsilon < 0.5\%$. The result are shown in
+\cref{fig:thick_panels}, where \cref{fig:thick_panels1} does this for the
+NACA0015 at $\alpha=\SI{5}{\degree}$, and \cref{fig:thick_panels2} for the
+NACA2422 at $\alpha=\SI{10}{\degree}$. With this criterion, the recommended
+minimum amount of panels lies around $n_{panels} = \pm 100$, which means at least 50
+panels when using the lumped vortex method, but due to the flat-plate
+assumption, this method will always have higher error values. For reference, the
+default number of panels that \xfoil uses is 160.
+
 
 \begin{figure}[h]
   \centering
@@ -678,17 +685,18 @@ should be used at all times.
     \centering
     \captionsetup{width=.8\linewidth}
     \includegraphics[width=.9\linewidth]{static/thick_panels.pdf}
-    \caption{\centering Lift polar for varying thickness using the linear vortex method}
+    \caption{\centering Pressure distributions using the linear vortex model}
     \label{fig:thick_npanels}
   \end{subfigure}\hfill% or \hspace{5mm} or \hspace{0.3\textwidth}
   \begin{subfigure}{.5\textwidth}
     \centering
     \captionsetup{width=.8\linewidth}
     \includegraphics[width=.9\linewidth]{static/thin_panels.pdf}
-    \caption{\centering Lift polar for varying thickness using the lumped vortex method}
+    \caption{\centering  Pressure differential distributions using the lumped vortex model}
     \label{fig:thin_npanels}
   \end{subfigure}
-  \caption{\centering Effect of thickness on the $C_l$ for a symmetric airfoil at different angles of attack.}
+  \caption{\centering Pressure distributions for the NACA0015 at
+  $\alpha=\SI{5}{\degree}$ with varying panel density}
   \label{fig:npanels}
 \end{figure}
 
@@ -697,15 +705,15 @@ should be used at all times.
   \begin{subfigure}{.5\textwidth}
     \centering
     \captionsetup{width=.8\linewidth}
-    \includegraphics[width=.9\linewidth]{static/conv_thick_sym.png}
-    \caption{For the NACA0012 at $\alpha = 5^{\circ}$, results are within 0.5\% of \xfoil with 98 panels}
+    \includegraphics[width=.9\linewidth]{static/thin_conv_naca0015.pdf}
+    \caption{\centering Panels required for a NACA0015 at $\alpha = 5^{\circ}$}
     \label{fig:thick_panels1}
   \end{subfigure}%
   \begin{subfigure}{.5\textwidth}
     \centering
     \captionsetup{width=.8\linewidth}
-    \includegraphics[width=.9\linewidth]{static/conv_thick.png}
-    \caption{For the NACA4412 at $\alpha = 5^{\circ}$, results are within 0.5\% of \xfoil with 102 panels}
+    \includegraphics[width=.9\linewidth]{static/thin_conv_naca2422.pdf}
+    \caption{\centering Panels required for a NACA2422 at $\alpha = 10^{\circ}$}
     \label{fig:thick_panels2}
   \end{subfigure}
   \caption{\centering Convergence of results with increasing panel density}

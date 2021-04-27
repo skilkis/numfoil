@@ -120,80 +120,79 @@ alpha = 5
 
 # ## * ### minimize dCl / run until convergence ###
 
-naca_code = "naca0001"
-alpha = 5
+for naca_code, alpha in [("naca0015", 5), ("naca2422", 10)]:
 
-mode="error"
-tol = 0.1
-itr = True
-p = 6
-t = []
-Cl = []
+    mode="error"
+    tol = 0.005
+    itr = True
+    p = 6
+    t = []
+    Cl = []
 
-# TODO # replace cl_old with xfoil value
-fig, ax = plt.subplots()
+    # TODO # replace cl_old with xfoil value
+    fig, ax = plt.subplots()
 
-solution = LumpedVortex(
-    airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
-).solve_for(alpha=alpha)
-cl_old = solution.lift_coefficient[0]
+    solution = LinearVortex(
+        airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
+    ).solve_for(alpha=alpha)
+    cl_old = solution.lift_coefficient[0][0]
 
-dCl = []
-extra = False
+    dCl = []
+    extra = False
 
-ax.axhline(y=cl_old, color="k")
-ax.text(15, cl_old / 1.01, f"Goal $C_l = {round(cl_old,4)}$", color="k")
-# ax.set_zorder(1)
+    ax.axhline(y=cl_old, color="k")
+    ax.text(15, cl_old / 1.015, f"Goal $C_l = {round(cl_old,4)}$", color="k")
+    # ax.set_zorder(1)
 
-while itr is True:
-    solution = LumpedVortex(
-        airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=p
-        ).solve_for(alpha=alpha)
-    cl = solution.lift_coefficient[0]
-    Cl.append(cl)
-    t.append(p)
+    while itr is True:
+        solution = LinearVortex(
+            airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=p
+            ).solve_for(alpha=alpha)
+        cl = solution.lift_coefficient[0][0]
+        Cl.append(cl)
+        t.append(p)
 
-    diff = sqrt(((cl - cl_old) / cl_old) ** 2)
-    dCl.append(diff)
+        diff = sqrt(((cl - cl_old) / cl_old) ** 2)
+        dCl.append(diff)
 
-    if diff < tol:
-        if extra is True:
-            itr = False
+        if diff < tol:
+            if extra is True:
+                itr = False
+            else:
+                ax.axvline(x=p, color="g")
+                ax.text(
+                    p * 0.65,
+                    Cl[0] + (cl - Cl[0]) / 2,
+                    "{} panels\n{} = {}\n$C_l$ = {}".format(
+                        p, mode, round(diff, 4), round(cl, 4)
+                    ),
+                    color="g",
+                )
+                tol = tol * 0.5
+                extra = True
+                print(p, cl, cl_old, diff)
+                print((cl - Cl[0]) / 2)
         else:
-            ax.axvline(x=p, color="g")
-            ax.text(
-                p * 0.65,
-                Cl[0] + (cl - Cl[0]) / 2,
-                "{} panels\n{} = {}\n$C_l$ = {}".format(
-                    p, mode, round(diff, 4), round(cl, 4)
-                ),
-                color="g",
-            )
-            tol = tol * 0.5
-            extra = True
-            print(p, cl, cl_old, diff)
-            print((cl - Cl[0]) / 2)
-    else:
-        p += 2
-        if mode == "conv":
-            cl_old = cl  # result conversion
-        elif mode == "error":
-            pass  # error reduction
+            p += 2
+            if mode == "conv":
+                cl_old = cl  # result conversion
+            elif mode == "error":
+                pass  # error reduction
 
-# print(p, cl, cl_old, diff)
+    # print(p, cl, cl_old, diff)
 
-ax.plot(t, Cl, "r")
-ax.set_ylabel(r"$C_l$", color="r")
-ax.set_xlabel(r"number of panels")
-ax.tick_params(axis="y", labelcolor="r")
+    ax.plot(t, Cl, "r")
+    ax.set_ylabel(r"$C_l$", color="r")
+    ax.set_xlabel(r"number of panels")
+    ax.tick_params(axis="y", labelcolor="r")
 
-ax2 = ax.twinx()
-ax2.set_ylabel(r"error $\epsilon $", color="b")
-ax2.tick_params(axis="y", labelcolor="b")
-ax2.plot(t, dCl, "b")
+    ax2 = ax.twinx()
+    ax2.set_ylabel(r"error $\epsilon $", color="b")
+    ax2.tick_params(axis="y", labelcolor="b")
+    ax2.plot(t, dCl, "b")
 
-ax2.grid(False)
-# fig.tight_layout()
-plt.show()
-plt.style.use("bmh")
-# fig.savefig(FIGURE_DIR / "thin_conv.pdf", bbox_inches="tight")
+    ax2.grid(False)
+    # fig.tight_layout()
+    plt.show()
+    plt.style.use("bmh")
+    fig.savefig(FIGURE_DIR / f"thin_conv_{naca_code}.pdf", bbox_inches="tight")
