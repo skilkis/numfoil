@@ -181,15 +181,15 @@ for naca_code, alpha in [("naca0015", 5), ("naca2422", 10)]:
 
     # print(p, cl, cl_old, diff)
 
-    ax.plot(t, Cl, "r")
-    ax.set_ylabel(r"$C_l$", color="r")
+    clplot = ax.plot(t, Cl)
+    ax.set_ylabel(r"$C_l$", color=clplot[0].get_color())
     ax.set_xlabel(r"number of panels")
-    ax.tick_params(axis="y", labelcolor="r")
+    ax.tick_params(axis="y", labelcolor=clplot[0].get_color())
 
     ax2 = ax.twinx()
-    ax2.set_ylabel(r"error $\epsilon $", color="b")
-    ax2.tick_params(axis="y", labelcolor="b")
-    ax2.plot(t, dCl, "b")
+    errorplot = ax2.plot(t, dCl, color=next(ax._get_lines.prop_cycler)['color'])
+    ax2.set_ylabel(r"error $\epsilon $", color=errorplot[0].get_color())
+    ax2.tick_params(axis="y", labelcolor=errorplot[0].get_color())
 
     ax2.grid(False)
     # fig.tight_layout()
