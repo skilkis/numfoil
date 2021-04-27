@@ -132,17 +132,18 @@ instead. Hence, this second method does take airfoil thickness into account.
 
 \section{Lumped Vortex Method}
 \label{sec:thin}
-The first method, described by \citeauthor{katz_plotkin}\cite{katz_plotkin}, analyzes an airfoil
-looking only at the airfoil's camber line. This discretization is visualized in
-\autoref{fig:discr_thin}, where $n=7$ panels are placed on the camber line starting at
-the leading edge. These panels are created by adding $n+1$ nodes on the camber
-line, the coordinates for which are obtained using the camber line function from
-\autoref{eq:camber}. Lumped vortex elements and collocation points are placed at
-25\% and 75\% of each panel's length. This way the airfoil is represented as a
-set of zero-thickness vortex sheets.
-% Note that linear node spacing is used in
-% \autoref{fig:discr_thin}. For the implementation, however, cosine spacing is used to
-increase accuracy of the results at the leading and trailing edge.
+The first method, described by \citeauthor{katz_plotkin} \cite{katz_plotkin},
+analyzes an airfoil looking only at the airfoil's camber line. This
+discretization is visualized in \autoref{fig:discr_thin}, where $n=7$ panels
+are placed on the camber line starting at the leading edge. These panels are
+created by adding $n+1$ nodes on the camber line, the coordinates for which are
+obtained using the camber line function from \autoref{eq:camber}. Lumped vortex
+elements and collocation points are placed at 25\% and 75\% of each panel's
+length respectively. This way the airfoil is represented as a set of
+zero-thickness vortex sheets.
+% Note that linear node spacing is used in \autoref{fig:discr_thin}. For the
+% implementation, however, cosine spacing is used to
+% increase accuracy of the results at the leading and trailing edge.
 
 
 \begin{figure}[H]
