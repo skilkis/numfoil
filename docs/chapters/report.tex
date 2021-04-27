@@ -74,8 +74,10 @@ tangent vectors of each panel. Once the panelling is completed, the geometry is
 used to construct an influence matrix. In this step the influence of all
 singularities on a particular panel, is independent of other panels due to the
 initial assumption that the circulation strength is one and can therefore be
-massively parallelized. This is depicted in \cref{fig:activity} by the
-Collocation Point 0 and Collocation Point N being solved in parallel.\\
+massively parallelized. This is depicted in \cref{fig:activity} by the parallel
+execution of Collocation Point 0 and Collocation Point N, as well as all
+collocation points in between which are not represented here to simplify the
+diagram.\\
 
 Once the influence matrix is constructed, depending on the panel method used,
 the flow velocity is projected either on the normal or tangent vector of each
