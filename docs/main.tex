@@ -18,7 +18,7 @@
 \makeatletter
 \patchcmd\chapter
 {\if@openright\cleardoublepage\else\clearpage\fi}
-{\par \vspace{10mm}}% Inserting a \par here!
+{\par \vspace{15mm}}% Inserting a \par here!
 {}{}
 \makeatother
 
@@ -31,8 +31,11 @@
 %Document Part I: Front matter
 \frontmatter
     \tableofcontents
+    \newpage
     \printnomenclature[50pt]
+    % \newpage
     \listoffigures
+    \newpage
     \listoftables
 
 \mainmatter
