@@ -15,20 +15,13 @@ collocation point, the influence of all these vortex elements will be evaluated.
 From this, values like $C_l$, $C_m$ and $C_p$ can be estimated. Using this
 method the effect of camber on the airfoil can be quickly evaluated.\\
 
-To also evaluated the effect of thickness, the second method instead places $n$
-panels along the airfoil's surface. This time constant vortex elements are
-placed in the panels.
-Both methods are based on the Kutta condition, meaning this condition is
-intrinsically satisfied. Both methods have the same general structure, which can
-be seen in \autoref{fig:activity}. The steps are discussed in more detail
-for each of the two methods in the following sections.
-
-% \begin{figure}[H]
-% \label{fig:flow_diagram}
-% \centering
-% \includegraphics[width=.8\textwidth]{static/missing.jpg}
-% \caption{Flow diagram showing the general structure of the created solver program.}
-% \end{figure}
+To also evaluate the effect of thickness, the second method instead places $n$
+panels along the airfoil's surface. This time a linear distribution of vortex
+elements are placed in the panels. Both methods are based on the Kutta
+condition, meaning this condition is intrinsically satisfied. Both methods have
+the same general structure, which can be seen in \autoref{fig:activity}. The
+steps are discussed in more detail for each of the two methods in the following
+sections.
 
 \chapter{Implementation}
 For this assignment, the goal was to both learn more about potential flow
