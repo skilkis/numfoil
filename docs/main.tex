@@ -1,5 +1,6 @@
 \documentclass[11pt,a4paper,reqno,fancyheader]{tudelft-light/tud-report}
 \usepackage{wrapfig}
+\input{config.tex}  % Load listing configuration
 
 \title[Aircraft \\Aerodynamics]{Aircraft Aerodynamics}
 \subtitle{Assignments in fulfillment of AE4130 course requirements}
@@ -45,7 +46,7 @@
     \printbibliography[title=References,heading=bibintoc]
 
     %Appendices:
-    % \begin{appendices}
-    %     % \import{examples/}{listing}
-    % \end{appendices}
+    \begin{appendices}
+        \include{chapters/listing}
+    \end{appendices}
 \end{document}
