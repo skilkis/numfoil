@@ -1,7 +1,5 @@
-% \newcommand{\numfoil}{$\boldsymbol{\Gamma}$\textbf{py}\ }
-\newcommand{\numfoil}{\textsf{Numfoil}\ }
+\newcommand{\numfoil}{\textsf{numfoil}}
 \newcommand{\xfoil}{\textsf{XFOIL}\ }
-
 \chapter{Problem Description}
 To get a preliminary estimation of an airfoil's performance, numerical methods
 can be used which represent the airfoil as a series of flat, zero-thickness,
@@ -14,7 +12,7 @@ The first method ignores the airfoil's thickness and instead reduces it to only
 a set of $n$ panels located on the camber line. A lumped vortex element is then
 placed at some location on each panel, as well as a collocation point. At each
 collocation point, the influence of all these vortex elements will be evaluated.
-From this, values like $C_l$, $C_m$ and $C_P$ can be estimated. Using this
+From this, values like $C_l$, $C_m$ and $C_p$ can be estimated. Using this
 method the effect of camber on the airfoil can be quickly evaluated.\\
 
 To also evaluated the effect of thickness, the second method instead places $n$
@@ -32,25 +30,23 @@ for each of the two methods in the following sections.
 % \caption{Flow diagram showing the general structure of the created solver program.}
 % \end{figure}
 
-\chapter{\numfoil Implementation}
+\chapter{Implementation}
 For this assignment, the goal was to both learn more about potential flow
-theory while simultaneously creating a high-performance Python framework,
-making use of JIT compilation for parallelization, to make use of modern
+theory while simultaneously creating a high-performance Python package making
+use of JIT compilation for parallelization. Doing so enabled use of modern
 hardware while representing multiple airfoil discretizations ranging from thin
 airfoils to also thick paneling methods. The object-oriented paradigm, along
 with SOLID architecting principles was applied to create abstractions that
 could be specialized per type of potential flow solver. Doing so allowed
 minimal code duplication between each panel method, and resulted in the
-development of what was initially deemed \numfoil, but due to a naming conflict
-has become the \textsf{numfoil} package
-\footnote{\url{https://github.com/skilkis/numfoil}} which is publically
-available. Open sourcing the tool helps future students understand the theory
-given within textbooks from a clean-code perspective, which was not previously
-possible due to the scripting implementations provided with textbooks being
-void of information due to usage of obscure variable names.
+\numfoil\footnote{\url{https://github.com/skilkis/numfoil}} package which is
+publically available. Open sourcing the package is done in the spirit of
+helping future students understand the theory given within textbooks from a
+clean-code perspective, which was not previously possible due to the scripting
+implementations within those textbooks being void of information as a result of
+obscure variable names.\\
 
-\section{Software Architecture \& Flow Diagram}
-\begin{wrapfigure}{R}[2em]{0.45\textwidth}
+\begin{wrapfigure}{R}[2em]{0.55\textwidth}
     \vspace{-2em}
     \begin{center}
       \includegraphics[width=0.40\textwidth]{static/activity_diagram.pdf}
@@ -59,13 +55,50 @@ void of information due to usage of obscure variable names.
     \label{fig:activity}
 \end{wrapfigure}
 
-asdfghjkl
+In the development process of \numfoil, multiple panel methods were
+investigated to establish abstractions that were universal. From this
+investigation, the resulting abstraction is to understand how 2D airfoil panel
+methods discretize a contour, placing singularities at pre-determined
+locations, and measure their influence at other pre-determined locations called
+collocation points. The combined influences of all vortices can then be used
+along with boundary conditions that enforce flow penetration and tangency
+constraints to solve a system of linear equations. The general flow of all of
+these approaches is then, a) discretize the geometry, b) place singularity and
+collocation points to determine the influence these signularities will have, c)
+set boundary conditions on the system, and finally d) solve the resulting
+system of linear equations to obtain the circulations which can then be post
+processed into desired quantities of lift and pressure coefficient.\\
+
+These steps are then treated as responsibilities and split-up into different
+modules of the \numfoil package. To explain the flow of the code better, a UML
+activity diagram has been created, \cref{fig:activity}. In this diagram, one
+can see that first the \textsf{Airfoil} class is responsible for defining the
+geometry of the airfoil at any distance x along the chord-line. \\
+
+The user can then pass in the \textsf{Airfoil} object to a \textsf{PanelMethod}
+class which then is responsible for querying the airfoil at various locations
+to produce a paneled geometry of the airfoil. This geometry is then represented
+by a \textsf{Panel2D} object which has additioanl data such as the normal and
+tangent vectors of each panel. Once the panelling is completed, the geometry is
+used to construct an influence matrix. In this step the influence of all
+singularities on a particular panel, is independent of other panels due to the
+initial assumption that the circulation strength is one and can therefore be
+massively parallelized. This is depicted in \cref{fig:activity} by the
+Collocation Point 0 and Collocation Point N being solved in parallel.\\
+
+Once the influence matrix is constructed, depending on the panel method used,
+the flow velocity is projected either on the normal or tangent vector of each
+panel. This allows for creating a Right Hand Side (RHS) vector which then
+presents a system of linear equations. Through matrix inversion, the unknown
+circulation strengths can then be solved for. Finally, the circulation
+strengths can then be processed into the desired flow quantities using the
+\textsf{FlowSolution} class.
 
 \section{Geometry Definition}
-Before we can begin the analysis, the functions describing the desired airfoil's
-camber line, and upper and lower surface should be created. Airfoils are defined
-using the NACA 4-digit code. \autoref{eq:camber} is used to obtain the camber
-line function.
+Before we can begin the analysis, the functions describing the desired
+airfoil's camber line, and upper and lower surface should be created. Airfoils
+are defined using the NACA 4-digit code. \autoref{eq:camber} is used to obtain
+the camber line function.
 
 \begin{equation}
 \label{eq:camber}
