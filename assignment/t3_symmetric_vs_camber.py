@@ -1,54 +1,68 @@
 """Task 3: Compare Symmetric vs. Asymmetric Airfoil."""
 
+from pathlib import Path
+from typing import Dict, Generator, List, Sequence
 
+import numpy as np
+import xfoil
 from matplotlib import pyplot as plt
 
-from numfoil.legacy.panel.thick import Solver, ThickPanelledAirfoil
+from numfoil.geometry import NACA4Airfoil
+from numfoil.geometry.airfoil import ParabolicCamberAirfoil
+from numfoil.solver.m_linear_vortex import LinearVortex
+from numfoil.solver.m_lumped_vortex import LumpedVortex
 
 
-def get_data(Naca="0012", alpha=0):
-    foil = ThickPanelledAirfoil(Naca=Naca, n_panels=100)
-    # foil.panels.plt()
-    solver = Solver(foil.panels)
-    Cp = solver.solve_Cp(alpha=alpha, plot=False)
-    Cl = solver.get_cl(alpha=alpha)
-    return Cp, Cl, foil
+DATA_DIR = Path(__file__).parent / "reference_data"
+FIGURE_DIR = Path(__file__).parent.parent / "docs" / "static"
 
 
-# * ### effect of camber on Cp ###
+# * compare symm vs camber
+
+# CP plots
+
+print('Question 3:')
+fig, ax = plt.subplots()
+alpha = 5
+for naca_code in ["naca0015", "naca2415", "naca4415"]:
+    solution = LinearVortex(
+        airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
+    ).solve_for(alpha=alpha)
+    fig, ax = solution.plot_pressure_distribution(figax=[fig,ax], label=naca_code)
+fig.savefig(FIGURE_DIR / "thick_camber_a5.pdf", bbox_inches="tight")
 
 fig, ax = plt.subplots()
-Cp, _, foil = get_data(Naca="0012", alpha=5)
-ax.plot([i[0] for i in foil.panels.collocation_points], Cp, label="NACA0012")
-for c in range(1, 10, 2):
-    Cp, cl, foil = get_data(Naca="{}412".format(c), alpha=5)
-    ax.plot(
-        [i[0] for i in foil.panels.collocation_points],
-        Cp,
-        label="NACA{}412".format(c),
-    )
-ax.invert_yaxis()
-ax.set_ylabel(r"$C_p$")
-ax.set_xlabel("x/c")
-plt.legend(loc="best")
-plt.show()
-plt.style.use("ggplot")
+alpha = 5
+for naca_code in ["naca0015", "naca2415", "naca4415"]:
+    solution = LumpedVortex(
+        airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
+    ).solve_for(alpha=alpha)
+    fig, ax = solution.plot_delta_cp(figax=[fig,ax], label=naca_code)
+    ax.set_ylim([0,7])
+fig.savefig(FIGURE_DIR / "thin_camber_a5.pdf", bbox_inches="tight")
 
+# lift plots
 
-# * ### effect of camber on CL ###
 fig, ax = plt.subplots()
-for a in [0, 5, 10, 15]:
-    Cl = []
-    c = []
-    for i in range(10):
-        _, cl, _ = get_data(Naca="2{}22".format(i), alpha=a)
-        Cl.append(cl)
-        c.append(i)
+alpha = list(range(13))
+tp = True
+for naca_code in ["naca0015", "naca2415", "naca4415"]:
+    solution = LinearVortex(
+        airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
+    ).solve_for(alpha=alpha)
+    fig, ax = solution.plot_lift_gradient(figax=[fig,ax], label=naca_code, twopi=tp)
+    tp = None
+fig.savefig(FIGURE_DIR / "thick_camber_cla.pdf", bbox_inches="tight")
 
-    ax.plot(c, Cl, label="alpha = {}deg".format(a))
-ax.set_ylabel(r"$C_l$")
-ax.set_xlabel("camber")
-plt.legend(loc="best")
+fig, ax = plt.subplots()
+alpha = list(range(13))
+tp = True
+for naca_code in ["naca0015", "naca2415", "naca4415"]:
+    solution = LumpedVortex(
+        airfoil=NACA4Airfoil(naca_code=naca_code, te_closed=True), n_panels=200
+    ).solve_for(alpha=alpha)
+    fig, ax = solution.plot_lift_gradient(figax=[fig,ax], label=naca_code, twopi=tp)
+    tp = None
+fig.savefig(FIGURE_DIR / "thin_camber_cla.pdf", bbox_inches="tight")
 
-plt.show()
-plt.style.use("ggplot")
+

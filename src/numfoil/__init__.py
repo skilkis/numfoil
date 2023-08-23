@@ -3,7 +3,7 @@
 import matplotlib
 from matplotlib import pyplot as plt
 
-plt.style.use("ggplot")  # Sets style-sheet globally
+plt.style.use("bmh")  # Sets style-sheet globally
 
 STYLE_CONFIG = {}
 
