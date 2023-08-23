@@ -18,6 +18,7 @@ import re
 from abc import ABCMeta, abstractmethod
 from functools import cached_property
 from typing import Tuple, Union
+import os
 
 import matplotlib
 import numpy as np
@@ -410,6 +411,25 @@ class UIUCAirfoil(FileAirfoil):
     def parse_file(self) -> np.ndarray:
         """UIUC files are ordered correctly and have 1 header line."""
         return np.genfromtxt(self.filepath, skip_header=1)
+
+    @property
+    def fullname(self) -> str:
+        """Returns the name of the airfoil from header line."""
+        with open(self.filepath, 'r') as file:
+            first_line = file.readline().strip()
+        return first_line
+
+    @property
+    def name(self) -> str:
+        """Returns the name of the airfoil from filename."""
+        return os.path.splitext(os.path.basename(self.filepath))[0]
+
+    def __repr__(self) -> str:
+        """Overwrites string repr. to include airfoil name."""
+        # return f"{super().__repr__()}.{os.path.splitext(os.path.basename(self.filepath))[0]}"
+        return re.sub(
+            AIRFOIL_REPR_REGEX, f".UIUCAirfoil.{os.path.splitext(os.path.basename(self.filepath))[0]}", super().__repr__()
+        )
 
 
 class ParabolicCamberAirfoil(NACA4Airfoil):
