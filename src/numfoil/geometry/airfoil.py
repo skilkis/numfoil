@@ -268,7 +268,7 @@ class NACA4Airfoil(Airfoil):
     @property
     def name(self) -> str:
         """Returns the name of the airfoil from current attributes."""
-        return "NACA{m:.0f}{p:.0f}{t:.0f}".format(
+        return "NACA{m:.0f}{p:.0f}{t:02.0f}".format(
             m=self.max_camber * 100,
             p=self.camber_location * 10,
             t=self.max_thickness * 100,
