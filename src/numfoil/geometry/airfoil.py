@@ -326,12 +326,13 @@ class FileAirfoil(Airfoil):
     @cached_property
     def points(self) -> np.ndarray:
         """Returns airfoil ordinate points x, y as row-vectors."""
-        return self.parse_file()
+        return self.remove_consecutive_duplicates(self.parse_file())
 
     @cached_property
     def le_idx(self) -> np.ndarray:
         """Returns the leading edge index within :py:attr:`points`."""
-        return np.argwhere(self.points == np.min(self.points, axis=0))[0, 0]
+        # return np.argwhere(self.points == np.min(self.points, axis=0))[0, 0]
+        return np.argwhere(self.points[:,0] == np.min(self.points[:,0], axis=0))[0, 0]
 
     @cached_property
     def upper_surface(self) -> BSpline2D:
@@ -375,6 +376,18 @@ class FileAirfoil(Airfoil):
         lower_pts[:, 1] *= -1  # Flipping the lower surface across the chord
 
         return not np.allclose(upper_pts, lower_pts, atol=1e-6)
+
+    def remove_consecutive_duplicates(self, arr: np.ndarray) -> np.ndarray:
+        """Removes consecutive duplicate coordinates
+            If the file contains consecutive duplicates, splprep will throw an
+            error when trying to create the surface spline.
+        """
+        # Compute the difference between consecutive rows
+        diff = np.diff(arr, axis=0)
+        # Find the indices of the rows that are different from the preceding row
+        idx = np.where(np.any(diff != 0, axis=1))[0] + 1
+        # Append the first row and the rows that are different from the preceding row
+        return np.vstack((arr[0], arr[idx]))
 
     def camberline_at(self, x: Union[float, np.ndarray]) -> np.ndarray:
         """Returns camber-line points at the supplied ``x``.
