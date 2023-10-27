@@ -24,6 +24,9 @@ import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
 
+import scipy.interpolate as si
+from scipy.optimize import minimize
+
 from .geom2d import normalize_2d, rotate_2d_90ccw
 from .spline import BSpline2D
 
@@ -94,7 +97,7 @@ class Airfoil(metaclass=ABCMeta):
         return x
 
     def plot(
-        self, n_points: int = 100, show: bool = True
+        self, n_points: int = 200, show: bool = True
     ) -> Tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
         """Plots the airfoil with ``n_points`` per curve.
 
@@ -302,7 +305,191 @@ class NACA4Airfoil(Airfoil):
             raise ValueError("NACA code must contain 4 numbers")
 
 
+class PointsAirfoil(Airfoil):
+    """Class definition of an airfoil from given coordinate points.
+
+    Note:
+        Airfoils coordinates are ordered in Selig format, such that the first
+        point is the trailing edge, and the points go from the upper surface to
+        the lower surface and back to the trailing edge (Counter Clockwise).
+
+    Args:
+        points: array of airfoil surface coordinates in Selig format.
+    """
+
+    def __init__(self, points: np.ndarray):
+        self.points = self.remove_consecutive_duplicates(points)
+
+    @cached_property
+    def surface(self) -> BSpline2D:
+        """create a spline through all points,
+        convering the entire airfoil surface"""
+        return BSpline2D(self.points, degree=3)
+
+    @cached_property
+    def le_idx(self) -> np.ndarray:
+        """Returns the leading edge index within :py:attr:`points`."""
+        return np.argmin(self.points[:,0])
+
+    @cached_property
+    def le_sloc(self) -> np.ndarray:
+        """Returns the leading edge location on the surface spline."""
+        return minimize(lambda x: self.surface.evaluate_at(x)[0, 0], 0.5, bounds=[(0, 1)]).x[0]
+
+
+    @cached_property
+    def upper_surface(self) -> BSpline2D:
+        """Returns a spline of the upper airfoil surface."""
+        return BSpline2D(self.points[self.le_idx :: -1])
+
+    @cached_property
+    def lower_surface(self) -> BSpline2D:
+        """Returns a spline of the lower airfoil surface."""
+        return BSpline2D(self.points[self.le_idx :])
+
+    # TODO consider using geom2d views here
+    @cached_property
+    def mean_camber_line(self) -> BSpline2D:
+        """Returns a spline of the mean-camber line.
+
+        Note:
+            The mean camber line is defined as the average distance
+            between the top and bottom surfaces when measured normal
+            to the chord-line.
+        """
+        u = np.linspace(0, 1, num=2000)
+
+        upper_pts = self.upper_surface.evaluate_at(u)
+        lower_pts = self.lower_surface.evaluate_at(u)
+        return BSpline2D(0.5 * (upper_pts - lower_pts) + lower_pts)
+
+    @property
+    def cambered(self) -> bool:
+        """Returns if the current :py:class:`Airfoil` is cambered.
+
+        The algorithm works by flipping the lower surface points and
+        checking if the distance between the top and bottom points are
+        within a set tolerance.
+        """
+        u = np.linspace(0, 1, num=10)
+
+        upper_pts = self.upper_surface.evaluate_at(u)
+        lower_pts = self.lower_surface.evaluate_at(u)
+        lower_pts[:, 1] *= -1  # Flipping the lower surface across the chord
+
+        return not np.allclose(upper_pts, lower_pts, atol=1e-6)
+
+    def remove_consecutive_duplicates(self, arr: np.ndarray) -> np.ndarray:
+        """Removes consecutive duplicate coordinates
+            If the file contains consecutive duplicates, splprep will throw an
+            error when trying to create the surface spline.
+        """
+        diff = np.diff(arr, axis=0)  # Compute the difference between consecutive rows
+        idx = np.where(np.any(diff != 0, axis=1))[0] + 1  # Find the indices of the rows that are different from the preceding row
+        coor = np.vstack((arr[0], arr[idx]))  # Append the first row and the rows that are different from the preceding row
+        return coor
+
+    def camberline_at(self, x: Union[float, np.ndarray]) -> np.ndarray:
+        """Returns camber-line points at the supplied ``x``.
+
+        Args:
+            x: Chord-line fraction (0 = LE, 1 = TE)
+        """
+        return self.mean_camber_line.evaluate_at(u=x)
+        # return np.column_stack((x, self.mean_camber_line(x)))
+
+    def upper_surface_at(
+        self, x: Union[float, np.ndarray]
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Returns upper airfoil ordinates at the supplied ``x``.
+
+        Args:
+            x: Chord-line fraction (0 = LE, 1 = TE)
+        """
+        return self.upper_surface.evaluate_at(u=x)
+        # return np.column_stack((x, self.upper_surface(x)))
+
+    def lower_surface_at(
+        self, x: Union[float, np.ndarray]
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Returns lower airfoil ordinates at the supplied ``x``.
+
+        Args:
+            x: Chord-line fraction (0 = LE, 1 = TE)
+        """
+        return self.lower_surface.evaluate_at(u=x)
+
+
+class ProcessedPointsAirfoil(PointsAirfoil):
+    """Provided points are stored in the `unprocessed_points' attr. Points are
+    processed by creating an airfoil surface spline through all points. The
+    surface spline is then used to resample the airfoil coordinates for
+    consistency.
+
+    A minimization then determines the translation, rotation, and scaling
+    matrices which ensure the airfoil has a camberline going from (x,y) = (0,0)
+    to (1,0).
+
+    The minimzation is needed since the rotation can change which point is the
+    leading edge (foremost), requiring translation again, or vice versa.
+    """
+    def __init__(self, points: np.ndarray):
+        self.unprocessed_points = self.remove_consecutive_duplicates(points)
+
+    @cached_property
+    def points(self) -> np.ndarray:
+        """ Transformed airfoil coordinates
+        Ensures camberline goes from (x,y) = (0,0) to (1,0).
+
+        Returns:
+            array: Transformed airfoil coordinates
+        """
+        result = minimize(self._objective, np.array([0, 0, 0, 1, 1]))
+        translation_opt, rotation_angle_opt, scaling_opt = result.x[:2], result.x[2], result.x[3:]
+        transformed_coords = self._transform_airfoil(self.unprocessed_points, result.x)
+        return transformed_coords
+
+    def _transform_airfoil(self, coords, params):
+        """applies translation, rotation, scaling to coordinates"""
+        translation = np.array(params[:2])
+        rotation_angle = params[2]
+        scaling = np.array(params[3:])
+        translation_matrix = np.array([[1, 0, translation[0]],
+                                       [0, 1, translation[1]],
+                                       [0, 0, 1]])
+        rotation_matrix = np.array([[np.cos(rotation_angle), -np.sin(rotation_angle), 0],
+                                    [np.sin(rotation_angle), np.cos(rotation_angle), 0],
+                                    [0, 0, 1]])
+        scaling_matrix = np.array([[scaling[0], 0, 0],
+                                   [0, scaling[1], 0],
+                                   [0, 0, 1]])
+        transformation_matrix = np.dot(np.dot(translation_matrix, rotation_matrix), scaling_matrix)
+        transformed_coords = np.dot(np.hstack((coords, np.ones((len(coords), 1)))), transformation_matrix.T)[:, :2]
+        return transformed_coords
+
+    def _objective(self, params):
+        """objective function for airfoil processing"""
+        transformed_coords = self._transform_airfoil(self.unprocessed_points, params)
+        airfoil = PointsAirfoil(transformed_coords)
+        leading_edge = airfoil.surface.evaluate_at(airfoil.le_sloc)
+        trailing_edge = (transformed_coords[0] + transformed_coords[-1]) / 2
+        error = np.linalg.norm(leading_edge - np.array([0, 0])) + np.linalg.norm(trailing_edge - np.array([1, 0]))
+        return error
+
+
+class ProcessedFileAirfoil(ProcessedPointsAirfoil):
+    def __init__(self, filepath: str):
+        self.filepath = filepath
+
+    @cached_property
+    def unprocessed_points(self) -> np.ndarray:
+        """Returns airfoil ordinate points x, y as row-vectors."""
+        return self.remove_consecutive_duplicates(self.parse_file())
+
+
+
 class FileAirfoil(Airfoil):
+    # TODO: this can probably inherit from pointairfoil once things are working
     """Base class definition of an airfoil read from a file.
 
     Note:
@@ -327,12 +514,23 @@ class FileAirfoil(Airfoil):
     def points(self) -> np.ndarray:
         """Returns airfoil ordinate points x, y as row-vectors."""
         return self.remove_consecutive_duplicates(self.parse_file())
+        # return self.parse_file()
+
+    @cached_property
+    def surface(self) -> BSpline2D:
+        """create a spline through all points,
+        convering the entire airfoil surface"""
+        return BSpline2D(self.points, degree=4)
 
     @cached_property
     def le_idx(self) -> np.ndarray:
         """Returns the leading edge index within :py:attr:`points`."""
-        # return np.argwhere(self.points == np.min(self.points, axis=0))[0, 0]
-        return np.argwhere(self.points[:,0] == np.min(self.points[:,0], axis=0))[0, 0]
+        return np.argmin(self.points[:,0])
+
+    @cached_property
+    def le_sloc(self) -> np.ndarray:
+        """Returns the leading edge location on the surface spline."""
+        return minimize(lambda x: self.surface.evaluate_at(x)[0, 0], 0.5, bounds=[(0, 1)]).x[0]
 
     @cached_property
     def upper_surface(self) -> BSpline2D:
@@ -354,11 +552,10 @@ class FileAirfoil(Airfoil):
             between the top and bottom surfaces when measured normal
             to the chord-line.
         """
-        u = np.linspace(0, 1, num=100)
+        u = np.linspace(0, 1, num=1000)
 
         upper_pts = self.upper_surface.evaluate_at(u)
         lower_pts = self.lower_surface.evaluate_at(u)
-
         return BSpline2D(0.5 * (upper_pts - lower_pts) + lower_pts)
 
     @property
@@ -382,12 +579,10 @@ class FileAirfoil(Airfoil):
             If the file contains consecutive duplicates, splprep will throw an
             error when trying to create the surface spline.
         """
-        # Compute the difference between consecutive rows
-        diff = np.diff(arr, axis=0)
-        # Find the indices of the rows that are different from the preceding row
-        idx = np.where(np.any(diff != 0, axis=1))[0] + 1
-        # Append the first row and the rows that are different from the preceding row
-        return np.vstack((arr[0], arr[idx]))
+        diff = np.diff(arr, axis=0)  # Compute the difference between consecutive rows
+        idx = np.where(np.any(diff != 0, axis=1))[0] + 1  # Find the indices of the rows that are different from the preceding row
+        coor = np.vstack((arr[0], arr[idx]))  # Append the first row and the rows that are different from the preceding row
+        return coor
 
     def camberline_at(self, x: Union[float, np.ndarray]) -> np.ndarray:
         """Returns camber-line points at the supplied ``x``.
@@ -418,24 +613,37 @@ class FileAirfoil(Airfoil):
         return self.lower_surface.evaluate_at(u=x)
 
 
-class UIUCAirfoil(FileAirfoil):
+class UIUCAirfoil(ProcessedFileAirfoil):#FileAirfoil):
     """Creates :py:class:`Airfoil` from a UIUC airfoil file."""
 
     def parse_file(self) -> np.ndarray:
         """UIUC files are ordered correctly and have 1 header line."""
         return np.genfromtxt(self.filepath, skip_header=1)
 
-    @property
+    @cached_property
     def fullname(self) -> str:
         """Returns the name of the airfoil from header line."""
         with open(self.filepath, 'r') as file:
             first_line = file.readline().strip()
         return first_line
 
-    @property
+    @cached_property
     def name(self) -> str:
         """Returns the name of the airfoil from filename."""
         return os.path.splitext(os.path.basename(self.filepath))[0]
+
+    def plot(self, *args, show: bool = True, **kwargs):
+        """Specializes the :py:class:`Airfoil` plot with a title."""
+        # Turning off plot display to be able to display after the
+        # title is added to the plot
+        fig, ax = super().plot(*args, **kwargs, show=False)
+        ax.set_title(
+            "UIUC {name} Airfoil".format(
+                name=self.fullname
+            )
+        )
+        plt.show() if show else ()  # Rendering plot window if show is true
+        return fig, ax
 
     def __repr__(self) -> str:
         """Overwrites string repr. to include airfoil name."""
